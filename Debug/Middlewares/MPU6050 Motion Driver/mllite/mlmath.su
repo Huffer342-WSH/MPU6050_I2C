@@ -1,0 +1,11 @@
+mlmath.c:15:8:ml_asin	16	static
+mlmath.c:20:8:ml_atan	16	static
+mlmath.c:25:8:ml_atan2	24	static
+mlmath.c:30:8:ml_log	16	static
+mlmath.c:35:8:ml_sqrt	16	static
+mlmath.c:40:8:ml_ceil	16	static
+mlmath.c:45:8:ml_floor	16	static
+mlmath.c:50:8:ml_cos	16	static
+mlmath.c:55:8:ml_sin	16	static
+mlmath.c:60:8:ml_acos	16	static
+mlmath.c:65:8:ml_pow	24	static

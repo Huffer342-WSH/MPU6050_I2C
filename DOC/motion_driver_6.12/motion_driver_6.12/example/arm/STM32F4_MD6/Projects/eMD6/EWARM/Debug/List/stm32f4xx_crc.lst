@@ -1,0 +1,209 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:29
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_crc.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_crc.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\stm32f4xx_crc.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\stm32f4xx_crc.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_crc.c
+      1          /**
+      2            ******************************************************************************
+      3            * @file    stm32f4xx_crc.c
+      4            * @author  MCD Application Team
+      5            * @version V1.0.0
+      6            * @date    30-September-2011
+      7            * @brief   This file provides all the CRC firmware functions.
+      8            ******************************************************************************
+      9            * @attention
+     10            *
+     11            * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+     12            * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+     13            * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
+     14            * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+     15            * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+     16            * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+     17            *
+     18            * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+     19            ******************************************************************************
+     20            */
+     21          
+     22          /* Includes ------------------------------------------------------------------*/
+     23          #include "stm32f4xx_crc.h"
+     24          
+     25          /** @addtogroup STM32F4xx_StdPeriph_Driver
+     26            * @{
+     27            */
+     28          
+     29          /** @defgroup CRC 
+     30            * @brief CRC driver modules
+     31            * @{
+     32            */
+     33          
+     34          /* Private typedef -----------------------------------------------------------*/
+     35          /* Private define ------------------------------------------------------------*/
+     36          /* Private macro -------------------------------------------------------------*/
+     37          /* Private variables ---------------------------------------------------------*/
+     38          /* Private function prototypes -----------------------------------------------*/
+     39          /* Private functions ---------------------------------------------------------*/
+     40          
+     41          /** @defgroup CRC_Private_Functions
+     42            * @{
+     43            */
+     44          
+     45          /**
+     46            * @brief  Resets the CRC Data register (DR).
+     47            * @param  None
+     48            * @retval None
+     49            */
+     50          void CRC_ResetDR(void)
+     51          {
+     52            /* Reset CRC generator */
+     53            CRC->CR = CRC_CR_RESET;
+     54          }
+     55          
+     56          /**
+     57            * @brief  Computes the 32-bit CRC of a given data word(32-bit).
+     58            * @param  Data: data word(32-bit) to compute its CRC
+     59            * @retval 32-bit CRC
+     60            */
+     61          uint32_t CRC_CalcCRC(uint32_t Data)
+     62          {
+     63            CRC->DR = Data;
+     64            
+     65            return (CRC->DR);
+     66          }
+     67          
+     68          /**
+     69            * @brief  Computes the 32-bit CRC of a given buffer of data word(32-bit).
+     70            * @param  pBuffer: pointer to the buffer containing the data to be computed
+     71            * @param  BufferLength: length of the buffer to be computed					
+     72            * @retval 32-bit CRC
+     73            */
+     74          uint32_t CRC_CalcBlockCRC(uint32_t pBuffer[], uint32_t BufferLength)
+     75          {
+     76            uint32_t index = 0;
+     77            
+     78            for(index = 0; index < BufferLength; index++)
+     79            {
+     80              CRC->DR = pBuffer[index];
+     81            }
+     82            return (CRC->DR);
+     83          }
+     84          
+     85          /**
+     86            * @brief  Returns the current CRC value.
+     87            * @param  None
+     88            * @retval 32-bit CRC
+     89            */
+     90          uint32_t CRC_GetCRC(void)
+     91          {
+     92            return (CRC->DR);
+     93          }
+     94          
+     95          /**
+     96            * @brief  Stores a 8-bit data in the Independent Data(ID) register.
+     97            * @param  IDValue: 8-bit value to be stored in the ID register 					
+     98            * @retval None
+     99            */
+    100          void CRC_SetIDRegister(uint8_t IDValue)
+    101          {
+    102            CRC->IDR = IDValue;
+    103          }
+    104          
+    105          /**
+    106            * @brief  Returns the 8-bit data stored in the Independent Data(ID) register
+    107            * @param  None
+    108            * @retval 8-bit value of the ID register 
+    109            */
+    110          uint8_t CRC_GetIDRegister(void)
+    111          {
+    112            return (CRC->IDR);
+    113          }
+    114          
+    115          /**
+    116            * @}
+    117            */
+    118          
+    119          /**
+    120            * @}
+    121            */
+    122          
+    123          /**
+    124            * @}
+    125            */
+    126          
+    127          /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       4   CRC_CalcBlockCRC
+       0   CRC_CalcCRC
+       0   CRC_GetCRC
+       0   CRC_GetIDRegister
+       0   CRC_ResetDR
+       0   CRC_SetIDRegister
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable5
+       4  ??DataTable5_1
+       4  ??DataTable5_2
+      30  CRC_CalcBlockCRC
+      10  CRC_CalcCRC
+       6  CRC_GetCRC
+       8  CRC_GetIDRegister
+       8  CRC_ResetDR
+       6  CRC_SetIDRegister
+
+ 
+ 80 bytes in section .text
+ 
+ 80 bytes of CODE memory
+
+Errors: none
+Warnings: none

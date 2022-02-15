@@ -1,0 +1,3 @@
+log_stm32.c:61:5:_MLPrintLog	320	static
+log_stm32.c:116:6:eMPL_send_quat	48	static
+log_stm32.c:151:6:eMPL_send_data	48	static

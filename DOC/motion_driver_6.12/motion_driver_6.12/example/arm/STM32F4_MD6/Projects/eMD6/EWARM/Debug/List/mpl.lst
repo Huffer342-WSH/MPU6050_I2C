@@ -1,0 +1,165 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:27
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\mpl.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\mpl.c -D
+#        USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D MPU9250
+#        -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\mpl.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\mpl.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\mpl.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          /**
+      8           *   @defgroup  MPL mpl
+      9           *   @brief     Motion Library - Start Point
+     10           *              Initializes MPL.
+     11           *
+     12           *   @{
+     13           *       @file  mpl.c
+     14           *       @brief MPL start point.
+     15           */
+     16          
+     17          #include "storage_manager.h"
+     18          #include "log.h"
+     19          #include "mpl.h"
+     20          #include "start_manager.h"
+     21          #include "data_builder.h"
+     22          #include "results_holder.h"
+     23          #include "mlinclude.h"
+     24          
+     25          /**
+     26           * @brief  Initializes the MPL. Should be called first and once 
+     27           * @return Returns INV_SUCCESS if successful or an error code if not.
+     28           */
+     29          inv_error_t inv_init_mpl(void)
+     30          {
+     31              inv_init_storage_manager();
+     32          
+     33              /* initialize the start callback manager */
+     34              INV_ERROR_CHECK(inv_init_start_manager());
+     35          
+     36              /* initialize the data builder */
+     37              INV_ERROR_CHECK(inv_init_data_builder());
+     38          
+     39              INV_ERROR_CHECK(inv_enable_results_holder());
+     40          
+     41              return INV_SUCCESS;
+     42          }
+     43          
+     44          const char ml_ver[] = "InvenSense MA 5.1.2";
+     45          
+     46          /**
+     47           *  @brief  used to get the MPL version.
+     48           *  @param  version     a string where the MPL version gets stored.
+     49           *  @return INV_SUCCESS if successful or a non-zero error code otherwise.
+     50           */
+     51          inv_error_t inv_get_version(char **version)
+     52          {
+     53              INVENSENSE_FUNC_START;
+     54              /* cast out the const */
+     55              *version = (char *)&ml_ver;
+     56              return INV_SUCCESS;
+     57          }
+     58          
+     59          /** 
+     60           *  @brief  Starts the MPL. Typically called after inv_init_mpl() or after a
+     61           *          inv_stop_mpl() to start the MPL back up an running.
+     62           *  @return INV_SUCCESS if successful or a non-zero error code otherwise.
+     63           */
+     64          inv_error_t inv_start_mpl(void)
+     65          {
+     66              INV_ERROR_CHECK(inv_execute_mpl_start_notification());
+     67              return INV_SUCCESS;
+     68          }
+     69          
+     70          /**
+     71           * @}
+     72           */
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      16   __print_result_location
+        16   -> _MLPrintLog
+       0   inv_get_version
+       8   inv_init_mpl
+         8   -> __print_result_location
+         8   -> inv_enable_results_holder
+         8   -> inv_init_data_builder
+         8   -> inv_init_start_manager
+         8   -> inv_init_storage_manager
+       8   inv_start_mpl
+         8   -> __print_result_location
+         8   -> inv_execute_mpl_start_notification
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable3
+       4  ??DataTable3_1
+       4  ??DataTable3_2
+       4  ??DataTable3_3
+       4  ??DataTable3_4
+      24  ?_0
+      60  ?_1
+      22  __print_result_location
+       8  inv_get_version
+      94  inv_init_mpl
+      34  inv_start_mpl
+      20  ml_ver
+      32  -- Other
+
+ 
+ 136 bytes in section .rodata
+ 178 bytes in section .text
+ 
+ 178 bytes of CODE  memory
+ 136 bytes of CONST memory
+
+Errors: none
+Warnings: none

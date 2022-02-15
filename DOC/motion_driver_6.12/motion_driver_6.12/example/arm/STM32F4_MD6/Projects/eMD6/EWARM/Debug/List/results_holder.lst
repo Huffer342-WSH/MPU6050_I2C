@@ -1,0 +1,713 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:27
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\results_holder.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\results_holder.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\results_holder.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\results_holder.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\results_holder.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          /**
+      8           *   @defgroup  Results_Holder results_holder
+      9           *   @brief     Motion Library - Results Holder
+     10           *              Holds the data for MPL
+     11           *
+     12           *   @{
+     13           *       @file results_holder.c
+     14           *       @brief Results Holder for HAL.
+     15           */
+     16          
+     17          #include <string.h>
+     18          
+     19          #include "results_holder.h"
+     20          #include "ml_math_func.h"
+     21          #include "mlmath.h"
+     22          #include "start_manager.h"
+     23          #include "data_builder.h"
+     24          #include "message_layer.h"
+     25          #include "log.h"
+     26          
+     27          // These 2 status bits are used to control when the 9 axis quaternion is updated
+     28          #define INV_COMPASS_CORRECTION_SET 1
+     29          #define INV_6_AXIS_QUAT_SET 2
+     30          
+     31          struct results_t {
+     32              long nav_quat[4];
+     33              long gam_quat[4];
+     34              inv_time_t nav_timestamp;
+     35              inv_time_t gam_timestamp;
+     36              long local_field[3]; /**< local earth's magnetic field */
+     37              long mag_scale[3]; /**< scale factor to apply to magnetic field reading */
+     38              long compass_correction[4]; /**< quaternion going from gyro,accel quaternion to 9 axis */
+     39              int acc_state; /**< Describes accel state */
+     40              int got_accel_bias; /**< Flag describing if accel bias is known */
+     41              long compass_bias_error[3]; /**< Error Squared */
+     42              unsigned char motion_state;
+     43              unsigned int motion_state_counter; /**< Incremented for each no motion event in a row */
+     44              long compass_count; /**< compass state internal counter */
+     45              int got_compass_bias; /**< Flag describing if compass bias is known */
+     46              int large_mag_field; /**< Flag describing if there is a large magnetic field */
+     47              int compass_state; /**< Internal compass state */
+     48              long status;
+     49              struct inv_sensor_cal_t *sensor;
+     50              float quat_confidence_interval;
+     51          };
+     52          static struct results_t rh;
+     53          
+     54          /** @internal
+     55          * Store a quaternion more suitable for gaming. This quaternion is often determined
+     56          * using only gyro and accel.
+     57          * @param[in] quat Length 4, Quaternion scaled by 2^30
+     58          */
+     59          void inv_store_gaming_quaternion(const long *quat, inv_time_t timestamp)
+     60          {
+     61              rh.status |= INV_6_AXIS_QUAT_SET;
+     62              memcpy(&rh.gam_quat, quat, sizeof(rh.gam_quat));
+     63              rh.gam_timestamp = timestamp;
+     64          }
+     65          
+     66          /** @internal
+     67          * Sets the quaternion adjustment from 6 axis (accel, gyro) to 9 axis quaternion.
+     68          * @param[in] data Quaternion Adjustment
+     69          * @param[in] timestamp Timestamp of when this is valid
+     70          */
+     71          void inv_set_compass_correction(const long *data, inv_time_t timestamp)
+     72          {
+     73              rh.status |= INV_COMPASS_CORRECTION_SET;
+     74              memcpy(rh.compass_correction, data, sizeof(rh.compass_correction));
+     75              rh.nav_timestamp = timestamp;
+     76          }
+     77          
+     78          /** @internal
+     79          * Gets the quaternion adjustment from 6 axis (accel, gyro) to 9 axis quaternion.
+     80          * @param[out] data Quaternion Adjustment
+     81          * @param[out] timestamp Timestamp of when this is valid
+     82          */
+     83          void inv_get_compass_correction(long *data, inv_time_t *timestamp)
+     84          {
+     85              memcpy(data, rh.compass_correction, sizeof(rh.compass_correction));
+     86              *timestamp = rh.nav_timestamp;
+     87          }
+     88          
+     89          /** Returns non-zero if there is a large magnetic field. See inv_set_large_mag_field() for setting this variable.
+     90           * @return Returns non-zero if there is a large magnetic field.
+     91           */
+     92          int inv_get_large_mag_field()
+     93          {
+     94              return rh.large_mag_field;
+     95          }
+     96          
+     97          /** Set to non-zero if there as a large magnetic field. See inv_get_large_mag_field() for getting this variable.
+     98           * @param[in] state value to set for magnetic field strength. Should be non-zero if it is large.
+     99           */
+    100          void inv_set_large_mag_field(int state)
+    101          {
+    102              rh.large_mag_field = state;
+    103          }
+    104          
+    105          /** Gets the accel state set by inv_set_acc_state()
+    106           * @return accel state.
+    107           */
+    108          int inv_get_acc_state()
+    109          {
+    110              return rh.acc_state;
+    111          }
+    112          
+    113          /** Sets the accel state. See inv_get_acc_state() to get the value.
+    114           * @param[in] state value to set accel state to.
+    115           */
+    116          void inv_set_acc_state(int state)
+    117          {
+    118              rh.acc_state = state;
+    119              return;
+    120          }
+    121          
+    122          /** Returns the motion state
+    123          * @param[out] cntr Number of previous times a no motion event has occured in a row.
+    124          * @return Returns INV_SUCCESS if successful or an error code if not.
+    125          */
+    126          int inv_get_motion_state(unsigned int *cntr)
+    127          {
+    128              *cntr = rh.motion_state_counter;
+    129              return rh.motion_state;
+    130          }
+    131          
+    132          /** Sets the motion state
+    133           * @param[in] state motion state where INV_NO_MOTION is not moving
+    134           *            and INV_MOTION is moving.
+    135           */
+    136          void inv_set_motion_state(unsigned char state)
+    137          {
+    138              long set;
+    139              if (state == rh.motion_state) {
+    140                  if (state == INV_NO_MOTION) {
+    141                      rh.motion_state_counter++;
+    142                  } else {
+    143                      rh.motion_state_counter = 0;
+    144                  }
+    145                  return;
+    146              }
+    147              rh.motion_state_counter = 0;
+    148              rh.motion_state = state;
+    149              /* Equivalent to set = state, but #define's may change. */
+    150              if (state == INV_MOTION)
+    151                  set = INV_MSG_MOTION_EVENT;
+    152              else
+    153                  set = INV_MSG_NO_MOTION_EVENT;
+    154              inv_set_message(set, (INV_MSG_MOTION_EVENT | INV_MSG_NO_MOTION_EVENT), 0);
+    155          }
+    156          
+    157          /** Sets the local earth's magnetic field
+    158          * @param[in] data Local earth's magnetic field in uT scaled by 2^16.
+    159          *            Length = 3. Y typically points north, Z typically points down in
+    160          *                        northern hemisphere and up in southern hemisphere.
+    161          */
+    162          void inv_set_local_field(const long *data)
+    163          {
+    164              memcpy(rh.local_field, data, sizeof(rh.local_field));
+    165          }
+    166          
+    167          /** Gets the local earth's magnetic field
+    168          * @param[out] data Local earth's magnetic field in uT scaled by 2^16.
+    169          *            Length = 3. Y typically points north, Z typically points down in
+    170          *                        northern hemisphere and up in southern hemisphere.
+    171          */
+    172          void inv_get_local_field(long *data)
+    173          {
+    174              memcpy(data, rh.local_field, sizeof(rh.local_field));
+    175          }
+    176          
+    177          /** Sets the compass sensitivity
+    178           * @param[in] data Length 3, sensitivity for each compass axis
+    179           *  scaled such that 1.0 = 2^30.
+    180           */
+    181          void inv_set_mag_scale(const long *data)
+    182          {
+    183              memcpy(rh.mag_scale, data, sizeof(rh.mag_scale));
+    184          }
+    185          
+    186          /** Gets the compass sensitivity
+    187           * @param[out] data Length 3, sensitivity for each compass axis
+    188           *  scaled such that 1.0 = 2^30.
+    189           */
+    190          void inv_get_mag_scale(long *data)
+    191          {
+    192              memcpy(data, rh.mag_scale, sizeof(rh.mag_scale));
+    193          }
+    194          
+    195          /** Gets gravity vector
+    196           * @param[out] data gravity vector in body frame scaled such that 1.0 = 2^30.
+    197           * @return Returns INV_SUCCESS if successful or an error code if not.
+    198           */
+    199          inv_error_t inv_get_gravity(long *data)
+    200          {
+    201              data[0] =
+    202                  inv_q29_mult(rh.nav_quat[1], rh.nav_quat[3]) - inv_q29_mult(rh.nav_quat[2], rh.nav_quat[0]);
+    203              data[1] =
+    204                  inv_q29_mult(rh.nav_quat[2], rh.nav_quat[3]) + inv_q29_mult(rh.nav_quat[1], rh.nav_quat[0]);
+    205              data[2] =
+    206                  (inv_q29_mult(rh.nav_quat[3], rh.nav_quat[3]) + inv_q29_mult(rh.nav_quat[0], rh.nav_quat[0])) -
+    207                  1073741824L;
+    208          
+    209              return INV_SUCCESS;
+    210          }
+    211          
+    212          /** Returns a quaternion based only on gyro and accel.
+    213           * @param[out] data 6-axis  gyro and accel quaternion scaled such that 1.0 = 2^30.
+    214           * @return Returns INV_SUCCESS if successful or an error code if not.
+    215           */
+    216          inv_error_t inv_get_6axis_quaternion(long *data)
+    217          {
+    218              memcpy(data, rh.gam_quat, sizeof(rh.gam_quat));
+    219              return INV_SUCCESS;
+    220          }
+    221          
+    222          /** Returns a quaternion.
+    223           * @param[out] data 9-axis quaternion scaled such that 1.0 = 2^30.
+    224           * @return Returns INV_SUCCESS if successful or an error code if not.
+    225           */
+    226          inv_error_t inv_get_quaternion(long *data)
+    227          {
+    228              if (rh.status & (INV_COMPASS_CORRECTION_SET | INV_6_AXIS_QUAT_SET)) {
+    229                  inv_q_mult(rh.compass_correction, rh.gam_quat, rh.nav_quat);
+    230                  rh.status &= ~(INV_COMPASS_CORRECTION_SET | INV_6_AXIS_QUAT_SET);
+    231              }
+    232              memcpy(data, rh.nav_quat, sizeof(rh.nav_quat));
+    233              return INV_SUCCESS;
+    234          }
+    235          
+    236          /** Returns a quaternion.
+    237           * @param[out] data 9-axis quaternion.
+    238           * @return Returns INV_SUCCESS if successful or an error code if not.
+    239           */
+    240          inv_error_t inv_get_quaternion_float(float *data)
+    241          {
+    242              long ldata[4];
+    243              inv_error_t result = inv_get_quaternion(ldata);
+    244              data[0] = inv_q30_to_float(ldata[0]);
+    245              data[1] = inv_q30_to_float(ldata[1]);
+    246              data[2] = inv_q30_to_float(ldata[2]);
+    247              data[3] = inv_q30_to_float(ldata[3]);
+    248              return result;
+    249          }
+    250          
+    251          /** Returns a quaternion with accuracy and timestamp.
+    252           * @param[out] data 9-axis quaternion scaled such that 1.0 = 2^30.
+    253           * @param[out] accuracy Accuracy of quaternion, 0-3, where 3 is most accurate.
+    254           * @param[out] timestamp Timestamp of this quaternion in nanoseconds
+    255           */
+    256          void inv_get_quaternion_set(long *data, int *accuracy, inv_time_t *timestamp)
+    257          {
+    258              inv_get_quaternion(data);
+    259              *timestamp = inv_get_last_timestamp();
+    260              if (inv_get_compass_on()) {
+    261                  *accuracy = inv_get_mag_accuracy();
+    262              } else if (inv_get_gyro_on()) {
+    263                  *accuracy = inv_get_gyro_accuracy();
+    264              }else if (inv_get_accel_on()) {
+    265                  *accuracy = inv_get_accel_accuracy();
+    266              } else {
+    267                  *accuracy = 0;
+    268              }
+    269          }
+    270          
+    271          /** Callback that gets called everytime there is new data. It is 
+    272           * registered by inv_start_results_holder().
+    273           * @param[in] sensor_cal New sensor data to process.
+    274           * @return Returns INV_SUCCESS if successful or an error code if not.
+    275           */
+    276          inv_error_t inv_generate_results(struct inv_sensor_cal_t *sensor_cal)
+    277          {
+    278              rh.sensor = sensor_cal;
+    279              return INV_SUCCESS;
+    280          }
+    281          
+    282          /** Function to turn on this module. This is automatically called by
+    283           *  inv_enable_results_holder(). Typically not called by users.
+    284           * @return Returns INV_SUCCESS if successful or an error code if not.
+    285           */
+    286          inv_error_t inv_start_results_holder(void)
+    287          {
+    288              inv_register_data_cb(inv_generate_results, INV_PRIORITY_RESULTS_HOLDER,
+    289                  INV_GYRO_NEW | INV_ACCEL_NEW | INV_MAG_NEW);
+    290              return INV_SUCCESS;
+    291          }
+    292          
+    293          /** Initializes results holder. This is called automatically by the
+    294          * enable function inv_enable_results_holder(). It may be called any time the feature is enabled, but
+    295          * is typically not needed to be called by outside callers.
+    296          * @return Returns INV_SUCCESS if successful or an error code if not.
+    297          */
+    298          inv_error_t inv_init_results_holder(void)
+    299          {
+    300              memset(&rh, 0, sizeof(rh));
+    301              rh.mag_scale[0] = 1L<<30;
+    302              rh.mag_scale[1] = 1L<<30;
+    303              rh.mag_scale[2] = 1L<<30;
+    304              rh.compass_correction[0] = 1L<<30;
+    305              rh.gam_quat[0] = 1L<<30;
+    306              rh.nav_quat[0] = 1L<<30;
+    307              rh.quat_confidence_interval = (float)M_PI;
+    308              return INV_SUCCESS;
+    309          }
+    310          
+    311          /** Turns on storage of results.
+    312          */
+    313          inv_error_t inv_enable_results_holder()
+    314          {
+    315              inv_error_t result;
+    316              result = inv_init_results_holder();
+    317              if ( result ) {
+    318                  return result;
+    319              }
+    320          
+    321              result = inv_register_mpl_start_notification(inv_start_results_holder);
+    322              return result;
+    323          }
+    324          
+    325          /** Sets state of if we know the accel bias.
+    326           * @return return 1 if we know the accel bias, 0 if not.
+    327           *            it is set with inv_set_accel_bias_found()
+    328           */
+    329          int inv_got_accel_bias()
+    330          {
+    331              return rh.got_accel_bias;
+    332          }
+    333          
+    334          /** Sets whether we know the accel bias
+    335           * @param[in] state Set to 1 if we know the accel bias. 
+    336           *            Can be retrieved with inv_got_accel_bias()
+    337           */
+    338          void inv_set_accel_bias_found(int state)
+    339          {
+    340              rh.got_accel_bias = state;
+    341          }
+    342          
+    343          /** Sets state of if we know the compass bias.
+    344           * @return return 1 if we know the compass bias, 0 if not.
+    345           *            it is set with inv_set_compass_bias_found()
+    346           */
+    347          int inv_got_compass_bias()
+    348          {
+    349              return rh.got_compass_bias;
+    350          }
+    351          
+    352          /** Sets whether we know the compass bias
+    353           * @param[in] state Set to 1 if we know the compass bias. 
+    354           *            Can be retrieved with inv_got_compass_bias()
+    355           */
+    356          void inv_set_compass_bias_found(int state)
+    357          {
+    358              rh.got_compass_bias = state;
+    359          }
+    360          
+    361          /** Sets the compass state.
+    362           * @param[in] state Compass state. It can be retrieved with inv_get_compass_state().
+    363           */
+    364          void inv_set_compass_state(int state)
+    365          {
+    366              rh.compass_state = state;
+    367          }
+    368          
+    369          /** Get's the compass state
+    370           * @return the compass state that was set with inv_set_compass_state()
+    371           */
+    372          int inv_get_compass_state()
+    373          {
+    374              return rh.compass_state;
+    375          }
+    376          
+    377          /** Set compass bias error. See inv_get_compass_bias_error()
+    378           * @param[in] bias_error Set's how accurate we know the compass bias. It is the 
+    379           * error squared.
+    380           */
+    381          void inv_set_compass_bias_error(const long *bias_error)
+    382          {
+    383              memcpy(rh.compass_bias_error, bias_error, sizeof(rh.compass_bias_error));
+    384          }
+    385          
+    386          /** Get's compass bias error. See inv_set_compass_bias_error() for setting.
+    387           * @param[out] bias_error Accuracy as to how well the compass bias is known. It is the error squared.
+    388           */
+    389          void inv_get_compass_bias_error(long *bias_error)
+    390          {
+    391              memcpy(bias_error, rh.compass_bias_error, sizeof(rh.compass_bias_error));
+    392          }
+    393          
+    394          /**
+    395           *  @brief      Returns 3-element vector of accelerometer data in body frame
+    396           *                with gravity removed
+    397           *  @param[out] data    3-element vector of accelerometer data in body frame
+    398           *                with gravity removed
+    399           *  @return     INV_SUCCESS if successful
+    400           *              INV_ERROR_INVALID_PARAMETER if invalid input pointer
+    401           */
+    402          inv_error_t inv_get_linear_accel(long *data)
+    403          {
+    404              long gravity[3];
+    405          
+    406              if (data != NULL)
+    407              {
+    408                  inv_get_accel_set(data, NULL, NULL);
+    409                  inv_get_gravity(gravity);
+    410                  data[0] -= gravity[0] >> 14;
+    411                  data[1] -= gravity[1] >> 14;
+    412                  data[2] -= gravity[2] >> 14;
+    413                  return INV_SUCCESS;
+    414              }
+    415              else {
+    416                  return INV_ERROR_INVALID_PARAMETER;
+    417              }
+    418          }
+    419          
+    420          /**
+    421           *  @brief      Returns 3-element vector of accelerometer data in body frame
+    422           *  @param[out] data    3-element vector of accelerometer data in body frame
+    423           *  @return     INV_SUCCESS if successful
+    424           *              INV_ERROR_INVALID_PARAMETER if invalid input pointer
+    425           */
+    426          inv_error_t inv_get_accel(long *data)
+    427          {
+    428              if (data != NULL) {
+    429                  inv_get_accel_set(data, NULL, NULL);
+    430                  return INV_SUCCESS;
+    431              }
+    432              else {
+    433                  return INV_ERROR_INVALID_PARAMETER;
+    434              }
+    435          }
+    436          
+    437          /**
+    438           *  @brief      Returns 3-element vector of accelerometer float data
+    439           *  @param[out] data    3-element vector of accelerometer float data
+    440           *  @return     INV_SUCCESS if successful
+    441           *              INV_ERROR_INVALID_PARAMETER if invalid input pointer
+    442           */
+    443          inv_error_t inv_get_accel_float(float *data)
+    444          {
+    445              long tdata[3];
+    446              unsigned char i;
+    447          
+    448              if (data != NULL && !inv_get_accel(tdata)) {
+    449                  for (i = 0; i < 3; ++i) {
+    450                      data[i] = ((float)tdata[i] / (1L << 16));
+    451                  }
+    452                  return INV_SUCCESS;
+    453              }
+    454              else {
+    455                  return INV_ERROR_INVALID_PARAMETER;
+    456              }
+    457          }
+    458          
+    459          /**
+    460           *  @brief      Returns 3-element vector of gyro float data
+    461           *  @param[out] data    3-element vector of gyro float data
+    462           *  @return     INV_SUCCESS if successful
+    463           *              INV_ERROR_INVALID_PARAMETER if invalid input pointer
+    464           */
+    465          inv_error_t inv_get_gyro_float(float *data)
+    466          {
+    467              long tdata[3];
+    468              unsigned char i;
+    469          
+    470              if (data != NULL) {
+    471                  inv_get_gyro_set(tdata, NULL, NULL);
+    472                  for (i = 0; i < 3; ++i) {
+    473                      data[i] = ((float)tdata[i] / (1L << 16));
+    474                  }
+    475                  return INV_SUCCESS;
+    476              }
+    477              else {
+    478                  return INV_ERROR_INVALID_PARAMETER;
+    479              }
+    480          }
+    481          
+    482          /** Set 9 axis 95% heading confidence interval for quaternion
+    483          * @param[in] ci Confidence interval in radians.
+    484          */
+    485          void inv_set_heading_confidence_interval(float ci)
+    486          {
+    487              rh.quat_confidence_interval = ci;
+    488          }
+    489          
+    490          /** Get 9 axis 95% heading confidence interval for quaternion
+    491          * @return Confidence interval in radians.
+    492          */
+    493          float inv_get_heading_confidence_interval(void)
+    494          {
+    495              return rh.quat_confidence_interval;
+    496          }
+    497          
+    498          /**
+    499           *  @brief      Returns 3-element vector of linear accel float data
+    500           *  @param[out] data    3-element vector of linear aceel float data
+    501           *  @return     INV_SUCCESS if successful
+    502           *              INV_ERROR_INVALID_PARAMETER if invalid input pointer
+    503           */
+    504          inv_error_t inv_get_linear_accel_float(float *data)
+    505          {
+    506              long tdata[3];
+    507              unsigned char i;
+    508          
+    509              if (data != NULL && !inv_get_linear_accel(tdata)) {
+    510                  for (i = 0; i < 3; ++i) {
+    511                      data[i] = ((float)tdata[i] / (1L << 16));
+    512                  }
+    513                  return INV_SUCCESS;
+    514              }
+    515              else {
+    516                  return INV_ERROR_INVALID_PARAMETER;
+    517              }
+    518          }
+    519          
+    520          /**
+    521           * @}
+    522           */
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       8   inv_enable_results_holder
+         8   -> inv_init_results_holder
+         8   -> inv_register_mpl_start_notification
+       0   inv_generate_results
+       8   inv_get_6axis_quaternion
+         8   -> __aeabi_memcpy
+       0   inv_get_acc_state
+       8   inv_get_accel
+         8   -> inv_get_accel_set
+      24   inv_get_accel_float
+        24   -> inv_get_accel
+       8   inv_get_compass_bias_error
+         8   -> __aeabi_memcpy
+      16   inv_get_compass_correction
+        16   -> __aeabi_memcpy
+       0   inv_get_compass_state
+      16   inv_get_gravity
+        16   -> inv_q29_mult
+      24   inv_get_gyro_float
+        24   -> inv_get_gyro_set
+       0   inv_get_heading_confidence_interval
+       0   inv_get_large_mag_field
+      24   inv_get_linear_accel
+        24   -> inv_get_accel_set
+        24   -> inv_get_gravity
+      24   inv_get_linear_accel_float
+        24   -> inv_get_linear_accel
+       8   inv_get_local_field
+         8   -> __aeabi_memcpy
+       8   inv_get_mag_scale
+         8   -> __aeabi_memcpy
+       0   inv_get_motion_state
+       8   inv_get_quaternion
+         8   -> __aeabi_memcpy
+         8   -> inv_q_mult
+      32   inv_get_quaternion_float
+        32   -> inv_get_quaternion
+        32   -> inv_q30_to_float
+      16   inv_get_quaternion_set
+        16   -> inv_get_accel_accuracy
+        16   -> inv_get_accel_on
+        16   -> inv_get_compass_on
+        16   -> inv_get_gyro_accuracy
+        16   -> inv_get_gyro_on
+        16   -> inv_get_last_timestamp
+        16   -> inv_get_mag_accuracy
+        16   -> inv_get_quaternion
+       0   inv_got_accel_bias
+       0   inv_got_compass_bias
+       8   inv_init_results_holder
+         8   -> __aeabi_memset
+       0   inv_q30_to_float
+       0   inv_set_acc_state
+       0   inv_set_accel_bias_found
+       8   inv_set_compass_bias_error
+         8   -> __aeabi_memcpy
+       0   inv_set_compass_bias_found
+      16   inv_set_compass_correction
+        16   -> __aeabi_memcpy
+       0   inv_set_compass_state
+       0   inv_set_heading_confidence_interval
+       0   inv_set_large_mag_field
+       8   inv_set_local_field
+         8   -> __aeabi_memcpy
+       8   inv_set_mag_scale
+         8   -> __aeabi_memcpy
+       8   inv_set_motion_state
+         8   -> inv_set_message
+       8   inv_start_results_holder
+         8   -> inv_register_data_cb
+      16   inv_store_gaming_quaternion
+        16   -> __aeabi_memcpy
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable20
+       4  ??DataTable33
+       4  ??DataTable33_1
+       4  ??DataTable33_2
+       4  ??DataTable33_3
+       4  ??DataTable33_4
+       4  ??DataTable33_5
+       4  ??DataTable33_6
+       4  ??DataTable33_7
+       4  ??DataTable33_8
+       4  ??DataTable33_9
+      18  inv_enable_results_holder
+      10  inv_generate_results
+      18  inv_get_6axis_quaternion
+       8  inv_get_acc_state
+      22  inv_get_accel
+      76  inv_get_accel_float
+      16  inv_get_compass_bias_error
+      28  inv_get_compass_correction
+       6  inv_get_compass_state
+     102  inv_get_gravity
+      76  inv_get_gyro_float
+       8  inv_get_heading_confidence_interval
+       8  inv_get_large_mag_field
+      66  inv_get_linear_accel
+      76  inv_get_linear_accel_float
+      18  inv_get_local_field
+      18  inv_get_mag_scale
+      18  inv_get_motion_state
+      52  inv_get_quaternion
+      60  inv_get_quaternion_float
+      70  inv_get_quaternion_set
+       6  inv_got_accel_bias
+       6  inv_got_compass_bias
+      74  inv_init_results_holder
+      18  inv_q30_to_float
+       8  inv_set_acc_state
+       6  inv_set_accel_bias_found
+      16  inv_set_compass_bias_error
+       6  inv_set_compass_bias_found
+      42  inv_set_compass_correction
+       6  inv_set_compass_state
+       8  inv_set_heading_confidence_interval
+       8  inv_set_large_mag_field
+      18  inv_set_local_field
+      18  inv_set_mag_scale
+      86  inv_set_motion_state
+      18  inv_start_results_holder
+      42  inv_store_gaming_quaternion
+     136  rh
+
+ 
+   136 bytes in section .bss
+ 1 204 bytes in section .text
+ 
+ 1 204 bytes of CODE memory
+   136 bytes of DATA memory
+
+Errors: none
+Warnings: none

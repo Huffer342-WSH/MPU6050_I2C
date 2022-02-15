@@ -1,0 +1,17 @@
+bsp_i2c.c:363:6:I2C_Bus_Init	8	static
+bsp_i2c.c:392:5:Sensors_I2C_WriteRegister	32	static
+bsp_i2c.c:422:5:Sensors_I2C_ReadRegister	32	static
+bsp_i2c.c:451:6:Set_I2C_Retry	16	static
+bsp_i2c.c:461:16:Get_I2C_Retry	4	static
+bsp_i2c.c:470:13:Soft_I2C_Configuration	32	static
+bsp_i2c.c:489:13:Soft_I2C_Delay	16	static
+bsp_i2c.c:495:16:Soft_I2C_START	8	static
+bsp_i2c.c:518:13:Soft_I2C_STOP	8	static
+bsp_i2c.c:530:13:Soft_I2C_SendACK	8	static
+bsp_i2c.c:540:13:Soft_I2C_SendNACK	8	static
+bsp_i2c.c:555:9:Soft_I2C_Wait_Ack	16	static
+bsp_i2c.c:577:16:Soft_I2C_SendByte	24	static
+bsp_i2c.c:615:16:Soft_I2C_ReceiveByte	16	static
+bsp_i2c.c:639:16:Soft_I2C_ReceiveByte_WithACK	16	static
+bsp_i2c.c:675:16:Soft_DMP_I2C_Write	24	static
+bsp_i2c.c:698:16:Soft_DMP_I2C_Read	24	static

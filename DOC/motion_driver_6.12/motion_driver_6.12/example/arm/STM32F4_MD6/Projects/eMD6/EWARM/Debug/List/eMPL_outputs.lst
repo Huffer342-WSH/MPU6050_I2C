@@ -1,0 +1,447 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:22
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\eMPL-hal\eMPL_outputs.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\eMPL-hal\eMPL_outputs.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\eMPL_outputs.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\eMPL_outputs.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\eMPL-hal\eMPL_outputs.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          
+      8          /**
+      9           *   @defgroup  HAL_Outputs hal_outputs
+     10           *   @brief     Motion Library - HAL Outputs
+     11           *              Sets up common outputs for HAL
+     12           *
+     13           *   @{
+     14           *       @file eMPL_outputs.c
+     15           *       @brief Embedded MPL outputs.
+     16           */
+     17          #include "eMPL_outputs.h"
+     18          #include "ml_math_func.h"
+     19          #include "mlmath.h"
+     20          #include "start_manager.h"
+     21          #include "data_builder.h"
+     22          #include "results_holder.h"
+     23          
+     24          struct eMPL_output_s {
+     25              long quat[4];
+     26              int quat_accuracy;
+     27              int gyro_status;
+     28              int accel_status;
+     29              int compass_status;
+     30              int nine_axis_status;
+     31              inv_time_t nine_axis_timestamp;
+     32          };
+     33          
+     34          static struct eMPL_output_s eMPL_out;
+     35          
+     36          /**
+     37           *  @brief      Acceleration (g's) in body frame.
+     38           *  Embedded MPL defines gravity as positive acceleration pointing away from
+     39           *  the Earth.
+     40           *  @param[out] data        Acceleration in g's, q16 fixed point.
+     41           *  @param[out] accuracy    Accuracy of the measurement from 0 (least accurate)
+     42           *                          to 3 (most accurate).
+     43           *  @param[out] timestamp   The time in milliseconds when this sensor was read.
+     44           *  @return     1 if data was updated.
+     45           */
+     46          int inv_get_sensor_type_accel(long *data, int8_t *accuracy, inv_time_t *timestamp)
+     47          {
+     48              inv_get_accel_set(data, accuracy, timestamp);
+     49              if (eMPL_out.accel_status & INV_NEW_DATA)
+     50                  return 1;
+     51              else
+     52                  return 0;
+     53          }
+     54          
+     55          /**
+     56           *  @brief      Angular velocity (degrees per second) in body frame.
+     57           *  @param[out] data        Angular velocity in dps, q16 fixed point.
+     58           *  @param[out] accuracy    Accuracy of the measurement from 0 (least accurate)
+     59           *                          to 3 (most accurate).
+     60           *  @param[out] timestamp   The time in milliseconds when this sensor was read.
+     61           *  @return     1 if data was updated. 
+     62           */
+     63          int inv_get_sensor_type_gyro(long *data, int8_t *accuracy, inv_time_t *timestamp)
+     64          {
+     65              inv_get_gyro_set(data, accuracy, timestamp);
+     66              if (eMPL_out.gyro_status & INV_NEW_DATA)
+     67                  return 1;
+     68              else
+     69                  return 0;
+     70          }
+     71          
+     72          /**
+     73           *  @brief      Magnetic field strength in body frame.
+     74           *  @param[out] data        Field strength in microteslas, q16 fixed point.
+     75           *  @param[out] accuracy    Accuracy of the measurement from 0 (least accurate)
+     76           *                          to 3 (most accurate).
+     77           *  @param[out] timestamp   The time in milliseconds when this sensor was read.
+     78           *  @return     1 if data was updated. 
+     79           */
+     80          int inv_get_sensor_type_compass(long *data, int8_t *accuracy, inv_time_t *timestamp)
+     81          {
+     82              inv_get_compass_set(data, accuracy, timestamp);
+     83              if (eMPL_out.compass_status & INV_NEW_DATA)
+     84                  return 1;
+     85              else
+     86                  return 0;
+     87          }
+     88          
+     89          /**
+     90           *  @brief      Body-to-world frame quaternion.
+     91           *  The elements are output in the following order: W, X, Y, Z.
+     92           *  @param[out] data        Quaternion, q30 fixed point.
+     93           *  @param[out] accuracy    Accuracy of the measurement from 0 (least accurate)
+     94           *                          to 3 (most accurate).
+     95           *  @param[out] timestamp   The time in milliseconds when this sensor was read.
+     96           *  @return     1 if data was updated. 
+     97           */
+     98          int inv_get_sensor_type_quat(long *data, int8_t *accuracy, inv_time_t *timestamp)
+     99          {
+    100              memcpy(data, eMPL_out.quat, sizeof(eMPL_out.quat));
+    101              accuracy[0] = eMPL_out.quat_accuracy;
+    102              timestamp[0] = eMPL_out.nine_axis_timestamp;
+    103              return eMPL_out.nine_axis_status;
+    104          }
+    105          
+    106          /**
+    107           *  @brief      Quaternion-derived heading.
+    108           *  @param[out] data        Heading in degrees, q16 fixed point.
+    109           *  @param[out] accuracy    Accuracy of the measurement from 0 (least accurate)
+    110           *                          to 3 (most accurate).
+    111           *  @param[out] timestamp   The time in milliseconds when this sensor was read.
+    112           *  @return     1 if data was updated. 
+    113           */
+    114          int inv_get_sensor_type_heading(long *data, int8_t *accuracy, inv_time_t *timestamp)
+    115          {
+    116              long t1, t2, q00, q03, q12, q22;
+    117              float fdata;
+    118          
+    119              q00 = inv_q29_mult(eMPL_out.quat[0], eMPL_out.quat[0]);
+    120              q03 = inv_q29_mult(eMPL_out.quat[0], eMPL_out.quat[3]);
+    121              q12 = inv_q29_mult(eMPL_out.quat[1], eMPL_out.quat[2]);
+    122              q22 = inv_q29_mult(eMPL_out.quat[2], eMPL_out.quat[2]);
+    123          
+    124              /* X component of the Ybody axis in World frame */
+    125              t1 = q12 - q03;
+    126          
+    127              /* Y component of the Ybody axis in World frame */
+    128              t2 = q22 + q00 - (1L << 30);
+    129              fdata = atan2f((float) t1, (float) t2) * 180.f / (float) M_PI;
+    130              if (fdata < 0.f)
+    131                  fdata += 360.f;
+    132              data[0] = (long)(fdata * 65536.f);
+    133          
+    134              accuracy[0] = eMPL_out.quat_accuracy;
+    135              timestamp[0] = eMPL_out.nine_axis_timestamp;
+    136              return eMPL_out.nine_axis_status;
+    137          }
+    138          
+    139          /**
+    140           *  @brief      Body-to-world frame euler angles.
+    141           *  The euler angles are output with the following convention:
+    142           *  Pitch: -180 to 180
+    143           *  Roll: -90 to 90
+    144           *  Yaw: -180 to 180
+    145           *  @param[out] data        Euler angles in degrees, q16 fixed point.
+    146           *  @param[out] accuracy    Accuracy of the measurement from 0 (least accurate)
+    147           *                          to 3 (most accurate).
+    148           *  @param[out] timestamp   The time in milliseconds when this sensor was read.
+    149           *  @return     1 if data was updated.
+    150           */
+    151          int inv_get_sensor_type_euler(long *data, int8_t *accuracy, inv_time_t *timestamp)
+    152          {
+    153              long t1, t2, t3;
+    154              long q00, q01, q02, q03, q11, q12, q13, q22, q23, q33;
+    155              float values[3];
+    156          
+    157              q00 = inv_q29_mult(eMPL_out.quat[0], eMPL_out.quat[0]);
+    158              q01 = inv_q29_mult(eMPL_out.quat[0], eMPL_out.quat[1]);
+    159              q02 = inv_q29_mult(eMPL_out.quat[0], eMPL_out.quat[2]);
+    160              q03 = inv_q29_mult(eMPL_out.quat[0], eMPL_out.quat[3]);
+    161              q11 = inv_q29_mult(eMPL_out.quat[1], eMPL_out.quat[1]);
+    162              q12 = inv_q29_mult(eMPL_out.quat[1], eMPL_out.quat[2]);
+    163              q13 = inv_q29_mult(eMPL_out.quat[1], eMPL_out.quat[3]);
+    164              q22 = inv_q29_mult(eMPL_out.quat[2], eMPL_out.quat[2]);
+    165              q23 = inv_q29_mult(eMPL_out.quat[2], eMPL_out.quat[3]);
+    166              q33 = inv_q29_mult(eMPL_out.quat[3], eMPL_out.quat[3]);
+    167          
+    168              /* X component of the Ybody axis in World frame */
+    169              t1 = q12 - q03;
+    170          
+    171              /* Y component of the Ybody axis in World frame */
+    172              t2 = q22 + q00 - (1L << 30);
+    173              values[2] = -atan2f((float) t1, (float) t2) * 180.f / (float) M_PI;
+    174          
+    175              /* Z component of the Ybody axis in World frame */
+    176              t3 = q23 + q01;
+    177              values[0] =
+    178                  atan2f((float) t3,
+    179                          sqrtf((float) t1 * t1 +
+    180                                (float) t2 * t2)) * 180.f / (float) M_PI;
+    181              /* Z component of the Zbody axis in World frame */
+    182              t2 = q33 + q00 - (1L << 30);
+    183              if (t2 < 0) {
+    184                  if (values[0] >= 0)
+    185                      values[0] = 180.f - values[0];
+    186                  else
+    187                      values[0] = -180.f - values[0];
+    188              }
+    189          
+    190              /* X component of the Xbody axis in World frame */
+    191              t1 = q11 + q00 - (1L << 30);
+    192              /* Y component of the Xbody axis in World frame */
+    193              t2 = q12 + q03;
+    194              /* Z component of the Xbody axis in World frame */
+    195              t3 = q13 - q02;
+    196          
+    197              values[1] =
+    198                  (atan2f((float)(q33 + q00 - (1L << 30)), (float)(q13 - q02)) *
+    199                    180.f / (float) M_PI - 90);
+    200              if (values[1] >= 90)
+    201                  values[1] = 180 - values[1];
+    202          
+    203              if (values[1] < -90)
+    204                  values[1] = -180 - values[1];
+    205              data[0] = (long)(values[0] * 65536.f);
+    206              data[1] = (long)(values[1] * 65536.f);
+    207              data[2] = (long)(values[2] * 65536.f);
+    208          
+    209              accuracy[0] = eMPL_out.quat_accuracy;
+    210              timestamp[0] = eMPL_out.nine_axis_timestamp;
+    211              return eMPL_out.nine_axis_status;
+    212          }
+    213          
+    214          /**
+    215           *  @brief      Body-to-world frame rotation matrix.
+    216           *  @param[out] data        Rotation matrix, q30 fixed point.
+    217           *  @param[out] accuracy    Accuracy of the measurement from 0 (least accurate)
+    218           *                          to 3 (most accurate).
+    219           *  @param[out] timestamp   The time in milliseconds when this sensor was read.
+    220           *  @return     1 if data was updated.
+    221           */
+    222          int inv_get_sensor_type_rot_mat(long *data, int8_t *accuracy, inv_time_t *timestamp)
+    223          {
+    224              inv_quaternion_to_rotation(eMPL_out.quat, data);
+    225              accuracy[0] = eMPL_out.quat_accuracy;
+    226              timestamp[0] = eMPL_out.nine_axis_timestamp;
+    227              return eMPL_out.nine_axis_status;
+    228          }
+    229          
+    230          static inv_error_t inv_generate_eMPL_outputs
+    231              (struct inv_sensor_cal_t *sensor_cal)
+    232          {
+    233              int use_sensor;
+    234              long sr = 1000;
+    235              inv_get_quaternion_set(eMPL_out.quat, &eMPL_out.quat_accuracy, &eMPL_out.nine_axis_timestamp);
+    236              eMPL_out.gyro_status = sensor_cal->gyro.status;
+    237              eMPL_out.accel_status = sensor_cal->accel.status;
+    238              eMPL_out.compass_status = sensor_cal->compass.status;
+    239              
+    240              /* Find the highest sample rate and tie sensor fusion timestamps to that one. */
+    241              if (sensor_cal->gyro.status & INV_SENSOR_ON) {
+    242                  sr = sensor_cal->gyro.sample_rate_ms;
+    243                  use_sensor = 0;
+    244              }
+    245              if ((sensor_cal->accel.status & INV_SENSOR_ON) && (sr > sensor_cal->accel.sample_rate_ms)) {
+    246                  sr = sensor_cal->accel.sample_rate_ms;
+    247                  use_sensor = 1;
+    248              }
+    249              if ((sensor_cal->compass.status & INV_SENSOR_ON) && (sr > sensor_cal->compass.sample_rate_ms)) {
+    250                  sr = sensor_cal->compass.sample_rate_ms;
+    251                  use_sensor = 2;
+    252              }
+    253              if ((sensor_cal->quat.status & INV_SENSOR_ON) && (sr > sensor_cal->quat.sample_rate_ms)) {
+    254                  sr = sensor_cal->quat.sample_rate_ms;
+    255                  use_sensor = 3;
+    256              }
+    257          
+    258              switch (use_sensor) {
+    259              default:
+    260              case 0:
+    261                  eMPL_out.nine_axis_status = (sensor_cal->gyro.status & INV_NEW_DATA) ? 1 : 0;
+    262                  eMPL_out.nine_axis_timestamp = sensor_cal->gyro.timestamp;
+    263                  break;
+    264              case 1:
+    265                  eMPL_out.nine_axis_status = (sensor_cal->accel.status & INV_NEW_DATA) ? 1 : 0;
+    266                  eMPL_out.nine_axis_timestamp = sensor_cal->accel.timestamp;
+    267                  break;
+    268              case 2:
+    269                  eMPL_out.nine_axis_status = (sensor_cal->compass.status & INV_NEW_DATA) ? 1 : 0;
+    270                  eMPL_out.nine_axis_timestamp = sensor_cal->compass.timestamp;
+    271                  break;
+    272              case 3:
+    273                  eMPL_out.nine_axis_status = (sensor_cal->quat.status & INV_NEW_DATA) ? 1 : 0;
+    274                  eMPL_out.nine_axis_timestamp = sensor_cal->quat.timestamp;
+    275                  break;
+    276              }
+    277              
+    278              
+    279              return INV_SUCCESS;
+    280          }
+    281          
+    282          static inv_error_t inv_start_eMPL_outputs(void)
+    283          {
+    284              return inv_register_data_cb(inv_generate_eMPL_outputs,
+    285                  INV_PRIORITY_HAL_OUTPUTS, INV_GYRO_NEW | INV_ACCEL_NEW | INV_MAG_NEW);
+    286          }
+    287          
+    288          static inv_error_t inv_stop_eMPL_outputs(void)
+    289          {
+    290              return inv_unregister_data_cb(inv_generate_eMPL_outputs);
+    291          }
+    292          
+    293          static inv_error_t inv_init_eMPL_outputs(void)
+    294          {
+    295              memset(&eMPL_out, 0, sizeof(eMPL_out));
+    296              return INV_SUCCESS;
+    297          }
+    298          
+    299          /**
+    300           *  @brief  Turns on creation and storage of HAL type results.
+    301           */
+    302          inv_error_t inv_enable_eMPL_outputs(void)
+    303          {
+    304              inv_error_t result;
+    305              result = inv_init_eMPL_outputs();
+    306              if (result)
+    307                  return result;
+    308              return inv_register_mpl_start_notification(inv_start_eMPL_outputs);
+    309          }
+    310          
+    311          /**
+    312           *  @brief  Turns off creation and storage of HAL type results.
+    313           */
+    314          inv_error_t inv_disable_eMPL_outputs(void)
+    315          {
+    316              inv_stop_eMPL_outputs();
+    317              return inv_unregister_mpl_start_notification(inv_start_eMPL_outputs);
+    318          }
+    319          
+    320          /**
+    321           * @}
+    322           */
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       8   inv_disable_eMPL_outputs
+         8   -> inv_stop_eMPL_outputs
+         8   -> inv_unregister_mpl_start_notification
+       8   inv_enable_eMPL_outputs
+         8   -> inv_init_eMPL_outputs
+         8   -> inv_register_mpl_start_notification
+      16   inv_generate_eMPL_outputs
+        16   -> inv_get_quaternion_set
+       8   inv_get_sensor_type_accel
+         8   -> inv_get_accel_set
+       8   inv_get_sensor_type_compass
+         8   -> inv_get_compass_set
+      80   inv_get_sensor_type_euler
+        80   -> atan2f
+        80   -> inv_q29_mult
+        80   -> sqrtf
+       8   inv_get_sensor_type_gyro
+         8   -> inv_get_gyro_set
+      32   inv_get_sensor_type_heading
+        32   -> atan2f
+        32   -> inv_q29_mult
+      16   inv_get_sensor_type_quat
+        16   -> __aeabi_memcpy
+      16   inv_get_sensor_type_rot_mat
+        16   -> inv_quaternion_to_rotation
+       8   inv_init_eMPL_outputs
+         8   -> __aeabi_memset
+       8   inv_start_eMPL_outputs
+         8   -> inv_register_data_cb
+       8   inv_stop_eMPL_outputs
+         8   -> inv_unregister_data_cb
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable12
+       4  ??DataTable12_1
+       4  ??DataTable12_2
+       4  ??DataTable12_3
+       4  ??DataTable12_4
+       4  ??DataTable12_5
+       4  ??DataTable12_6
+       4  ??DataTable12_7
+       4  ??DataTable6
+       4  ??DataTable6_1
+       4  ??DataTable6_2
+      40  eMPL_out
+      14  inv_disable_eMPL_outputs
+      18  inv_enable_eMPL_outputs
+     246  inv_generate_eMPL_outputs
+      24  inv_get_sensor_type_accel
+      24  inv_get_sensor_type_compass
+     590  inv_get_sensor_type_euler
+      24  inv_get_sensor_type_gyro
+     178  inv_get_sensor_type_heading
+      44  inv_get_sensor_type_quat
+      32  inv_get_sensor_type_rot_mat
+      18  inv_init_eMPL_outputs
+      16  inv_start_eMPL_outputs
+      10  inv_stop_eMPL_outputs
+
+ 
+    40 bytes in section .bss
+ 1 282 bytes in section .text
+ 
+ 1 282 bytes of CODE memory
+    40 bytes of DATA memory
+
+Errors: none
+Warnings: none

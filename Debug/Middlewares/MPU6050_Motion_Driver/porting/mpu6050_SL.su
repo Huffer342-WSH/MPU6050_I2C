@@ -1,0 +1,6 @@
+mpu6050_SL.c:39:9:MPU6050_mpu_init	24	static
+mpu6050_SL.c:60:9:MPU6050_mpl_init	16	static
+mpu6050_SL.c:80:9:MPU6050_config	24	static
+mpu6050_SL.c:275:6:MPU6050_data_ready_cb	4	static
+mpu6050_SL.c:282:6:setup_gyro	16	static
+mpu6050_SL.c:316:9:MPU6050_get_sensor	96	static

@@ -1,0 +1,329 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:26
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\misc.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\misc.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\misc.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\misc.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\misc.c
+      1          /**
+      2            ******************************************************************************
+      3            * @file    misc.c
+      4            * @author  MCD Application Team
+      5            * @version V1.0.0
+      6            * @date    30-September-2011
+      7            * @brief   This file provides all the miscellaneous firmware functions (add-on
+      8            *          to CMSIS functions).
+      9            *          
+     10            *  @verbatim   
+     11            *                               
+     12            *          ===================================================================      
+     13            *                        How to configure Interrupts using driver 
+     14            *          ===================================================================      
+     15            * 
+     16            *            This section provide functions allowing to configure the NVIC interrupts (IRQ).
+     17            *            The Cortex-M4 exceptions are managed by CMSIS functions.
+     18            *
+     19            *            1. Configure the NVIC Priority Grouping using NVIC_PriorityGroupConfig()
+     20            *                function according to the following table.
+     21           
+     22            *  The table below gives the allowed values of the pre-emption priority and subpriority according
+     23            *  to the Priority Grouping configuration performed by NVIC_PriorityGroupConfig function
+     24            *    ==========================================================================================================================
+     25            *      NVIC_PriorityGroup   | NVIC_IRQChannelPreemptionPriority | NVIC_IRQChannelSubPriority  |       Description
+     26            *    ==========================================================================================================================
+     27            *     NVIC_PriorityGroup_0  |                0                  |            0-15             | 0 bits for pre-emption priority
+     28            *                           |                                   |                             | 4 bits for subpriority
+     29            *    --------------------------------------------------------------------------------------------------------------------------
+     30            *     NVIC_PriorityGroup_1  |                0-1                |            0-7              | 1 bits for pre-emption priority
+     31            *                           |                                   |                             | 3 bits for subpriority
+     32            *    --------------------------------------------------------------------------------------------------------------------------    
+     33            *     NVIC_PriorityGroup_2  |                0-3                |            0-3              | 2 bits for pre-emption priority
+     34            *                           |                                   |                             | 2 bits for subpriority
+     35            *    --------------------------------------------------------------------------------------------------------------------------    
+     36            *     NVIC_PriorityGroup_3  |                0-7                |            0-1              | 3 bits for pre-emption priority
+     37            *                           |                                   |                             | 1 bits for subpriority
+     38            *    --------------------------------------------------------------------------------------------------------------------------    
+     39            *     NVIC_PriorityGroup_4  |                0-15               |            0                | 4 bits for pre-emption priority
+     40            *                           |                                   |                             | 0 bits for subpriority                       
+     41            *    ==========================================================================================================================     
+     42            *
+     43            *            2. Enable and Configure the priority of the selected IRQ Channels using NVIC_Init()  
+     44            *
+     45            * @note  When the NVIC_PriorityGroup_0 is selected, IRQ pre-emption is no more possible. 
+     46            *        The pending IRQ priority will be managed only by the subpriority.
+     47            *
+     48            * @note  IRQ priority order (sorted by highest to lowest priority):
+     49            *         - Lowest pre-emption priority
+     50            *         - Lowest subpriority
+     51            *         - Lowest hardware priority (IRQ number)
+     52            *
+     53            *  @endverbatim
+     54            *
+     55            ******************************************************************************
+     56            * @attention
+     57            *
+     58            * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+     59            * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+     60            * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
+     61            * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+     62            * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+     63            * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+     64            *
+     65            * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+     66            ******************************************************************************
+     67            */
+     68          
+     69          /* Includes ------------------------------------------------------------------*/
+     70          #include "misc.h"
+     71          
+     72          /** @addtogroup STM32F4xx_StdPeriph_Driver
+     73            * @{
+     74            */
+     75          
+     76          /** @defgroup MISC 
+     77            * @brief MISC driver modules
+     78            * @{
+     79            */
+     80          
+     81          /* Private typedef -----------------------------------------------------------*/
+     82          /* Private define ------------------------------------------------------------*/
+     83          #define AIRCR_VECTKEY_MASK    ((uint32_t)0x05FA0000)
+     84          
+     85          /* Private macro -------------------------------------------------------------*/
+     86          /* Private variables ---------------------------------------------------------*/
+     87          /* Private function prototypes -----------------------------------------------*/
+     88          /* Private functions ---------------------------------------------------------*/
+     89          
+     90          /** @defgroup MISC_Private_Functions
+     91            * @{
+     92            */
+     93          
+     94          /**
+     95            * @brief  Configures the priority grouping: pre-emption priority and subpriority.
+     96            * @param  NVIC_PriorityGroup: specifies the priority grouping bits length. 
+     97            *   This parameter can be one of the following values:
+     98            *     @arg NVIC_PriorityGroup_0: 0 bits for pre-emption priority
+     99            *                                4 bits for subpriority
+    100            *     @arg NVIC_PriorityGroup_1: 1 bits for pre-emption priority
+    101            *                                3 bits for subpriority
+    102            *     @arg NVIC_PriorityGroup_2: 2 bits for pre-emption priority
+    103            *                                2 bits for subpriority
+    104            *     @arg NVIC_PriorityGroup_3: 3 bits for pre-emption priority
+    105            *                                1 bits for subpriority
+    106            *     @arg NVIC_PriorityGroup_4: 4 bits for pre-emption priority
+    107            *                                0 bits for subpriority
+    108            * @note   When the NVIC_PriorityGroup_0 is selected, IRQ pre-emption is no more possible. 
+    109            *         The pending IRQ priority will be managed only by the subpriority. 
+    110            * @retval None
+    111            */
+    112          void NVIC_PriorityGroupConfig(uint32_t NVIC_PriorityGroup)
+    113          {
+    114            /* Check the parameters */
+    115            assert_param(IS_NVIC_PRIORITY_GROUP(NVIC_PriorityGroup));
+    116            
+    117            /* Set the PRIGROUP[10:8] bits according to NVIC_PriorityGroup value */
+    118            SCB->AIRCR = AIRCR_VECTKEY_MASK | NVIC_PriorityGroup;
+    119          }
+    120          
+    121          /**
+    122            * @brief  Initializes the NVIC peripheral according to the specified
+    123            *         parameters in the NVIC_InitStruct.
+    124            * @note   To configure interrupts priority correctly, the NVIC_PriorityGroupConfig()
+    125            *         function should be called before. 
+    126            * @param  NVIC_InitStruct: pointer to a NVIC_InitTypeDef structure that contains
+    127            *         the configuration information for the specified NVIC peripheral.
+    128            * @retval None
+    129            */
+    130          void NVIC_Init(NVIC_InitTypeDef* NVIC_InitStruct)
+    131          {
+    132            uint8_t tmppriority = 0x00, tmppre = 0x00, tmpsub = 0x0F;
+    133            
+    134            /* Check the parameters */
+    135            assert_param(IS_FUNCTIONAL_STATE(NVIC_InitStruct->NVIC_IRQChannelCmd));
+    136            assert_param(IS_NVIC_PREEMPTION_PRIORITY(NVIC_InitStruct->NVIC_IRQChannelPreemptionPriority));  
+    137            assert_param(IS_NVIC_SUB_PRIORITY(NVIC_InitStruct->NVIC_IRQChannelSubPriority));
+    138              
+    139            if (NVIC_InitStruct->NVIC_IRQChannelCmd != DISABLE)
+    140            {
+    141              /* Compute the Corresponding IRQ Priority --------------------------------*/    
+    142              tmppriority = (0x700 - ((SCB->AIRCR) & (uint32_t)0x700))>> 0x08;
+    143              tmppre = (0x4 - tmppriority);
+    144              tmpsub = tmpsub >> tmppriority;
+    145          
+    146              tmppriority = NVIC_InitStruct->NVIC_IRQChannelPreemptionPriority << tmppre;
+    147              tmppriority |=  (uint8_t)(NVIC_InitStruct->NVIC_IRQChannelSubPriority & tmpsub);
+    148                  
+    149              tmppriority = tmppriority << 0x04;
+    150                  
+    151              NVIC->IP[NVIC_InitStruct->NVIC_IRQChannel] = tmppriority;
+    152              
+    153              /* Enable the Selected IRQ Channels --------------------------------------*/
+    154              NVIC->ISER[NVIC_InitStruct->NVIC_IRQChannel >> 0x05] =
+    155                (uint32_t)0x01 << (NVIC_InitStruct->NVIC_IRQChannel & (uint8_t)0x1F);
+    156            }
+    157            else
+    158            {
+    159              /* Disable the Selected IRQ Channels -------------------------------------*/
+    160              NVIC->ICER[NVIC_InitStruct->NVIC_IRQChannel >> 0x05] =
+    161                (uint32_t)0x01 << (NVIC_InitStruct->NVIC_IRQChannel & (uint8_t)0x1F);
+    162            }
+    163          }
+    164          
+    165          /**
+    166            * @brief  Sets the vector table location and Offset.
+    167            * @param  NVIC_VectTab: specifies if the vector table is in RAM or FLASH memory.
+    168            *   This parameter can be one of the following values:
+    169            *     @arg NVIC_VectTab_RAM: Vector Table in internal SRAM.
+    170            *     @arg NVIC_VectTab_FLASH: Vector Table in internal FLASH.
+    171            * @param  Offset: Vector Table base offset field. This value must be a multiple of 0x200.
+    172            * @retval None
+    173            */
+    174          void NVIC_SetVectorTable(uint32_t NVIC_VectTab, uint32_t Offset)
+    175          { 
+    176            /* Check the parameters */
+    177            assert_param(IS_NVIC_VECTTAB(NVIC_VectTab));
+    178            assert_param(IS_NVIC_OFFSET(Offset));  
+    179             
+    180            SCB->VTOR = NVIC_VectTab | (Offset & (uint32_t)0x1FFFFF80);
+    181          }
+    182          
+    183          /**
+    184            * @brief  Selects the condition for the system to enter low power mode.
+    185            * @param  LowPowerMode: Specifies the new mode for the system to enter low power mode.
+    186            *   This parameter can be one of the following values:
+    187            *     @arg NVIC_LP_SEVONPEND: Low Power SEV on Pend.
+    188            *     @arg NVIC_LP_SLEEPDEEP: Low Power DEEPSLEEP request.
+    189            *     @arg NVIC_LP_SLEEPONEXIT: Low Power Sleep on Exit.
+    190            * @param  NewState: new state of LP condition. This parameter can be: ENABLE or DISABLE.
+    191            * @retval None
+    192            */
+    193          void NVIC_SystemLPConfig(uint8_t LowPowerMode, FunctionalState NewState)
+    194          {
+    195            /* Check the parameters */
+    196            assert_param(IS_NVIC_LP(LowPowerMode));
+    197            assert_param(IS_FUNCTIONAL_STATE(NewState));  
+    198            
+    199            if (NewState != DISABLE)
+    200            {
+    201              SCB->SCR |= LowPowerMode;
+    202            }
+    203            else
+    204            {
+    205              SCB->SCR &= (uint32_t)(~(uint32_t)LowPowerMode);
+    206            }
+    207          }
+    208          
+    209          /**
+    210            * @brief  Configures the SysTick clock source.
+    211            * @param  SysTick_CLKSource: specifies the SysTick clock source.
+    212            *   This parameter can be one of the following values:
+    213            *     @arg SysTick_CLKSource_HCLK_Div8: AHB clock divided by 8 selected as SysTick clock source.
+    214            *     @arg SysTick_CLKSource_HCLK: AHB clock selected as SysTick clock source.
+    215            * @retval None
+    216            */
+    217          void SysTick_CLKSourceConfig(uint32_t SysTick_CLKSource)
+    218          {
+    219            /* Check the parameters */
+    220            assert_param(IS_SYSTICK_CLK_SOURCE(SysTick_CLKSource));
+    221            if (SysTick_CLKSource == SysTick_CLKSource_HCLK)
+    222            {
+    223              SysTick->CTRL |= SysTick_CLKSource_HCLK;
+    224            }
+    225            else
+    226            {
+    227              SysTick->CTRL &= SysTick_CLKSource_HCLK_Div8;
+    228            }
+    229          }
+    230          
+    231          /**
+    232            * @}
+    233            */
+    234          
+    235          /**
+    236            * @}
+    237            */
+    238          
+    239          /**
+    240            * @}
+    241            */
+    242          
+    243          /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   NVIC_Init
+       0   NVIC_PriorityGroupConfig
+       0   NVIC_SetVectorTable
+       0   NVIC_SystemLPConfig
+       0   SysTick_CLKSourceConfig
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable4
+       4  ??DataTable4_1
+       4  ??DataTable4_2
+       4  ??DataTable4_3
+       4  ??DataTable4_4
+       4  ??DataTable4_5
+       4  ??DataTable4_6
+       4  ??DataTable4_7
+       4  ??DataTable4_8
+      96  NVIC_Init
+      10  NVIC_PriorityGroupConfig
+      12  NVIC_SetVectorTable
+      36  NVIC_SystemLPConfig
+      32  SysTick_CLKSourceConfig
+
+ 
+ 222 bytes in section .text
+ 
+ 222 bytes of CODE memory
+
+Errors: none
+Warnings: none

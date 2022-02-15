@@ -1,0 +1,4 @@
+log.h:323:24:__print_result_location	32	static
+mpl.c:29:13:inv_init_mpl	8	static
+mpl.c:51:13:inv_get_version	16	static
+mpl.c:64:13:inv_start_mpl	8	static

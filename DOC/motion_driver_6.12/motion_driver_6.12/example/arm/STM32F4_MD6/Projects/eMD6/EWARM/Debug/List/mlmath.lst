@@ -1,0 +1,168 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:26
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\mlmath.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\mlmath.c -D
+#        USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D MPU9250
+#        -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\mlmath.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\mlmath.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\mlmath.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          /*******************************************************************************
+      8           *
+      9           * $Id: mlmath.c 5629 2011-06-11 03:13:08Z mcaramello $
+     10           *
+     11           *******************************************************************************/
+     12          
+     13          #include <math.h>
+     14          
+     15          double ml_asin(double x)
+     16          {
+     17              return asin(x);
+     18          }
+     19          
+     20          double ml_atan(double x)
+     21          {
+     22              return atan(x);
+     23          }
+     24          
+     25          double ml_atan2(double x, double y)
+     26          {
+     27              return atan2(x, y);
+     28          }
+     29          
+     30          double ml_log(double x)
+     31          {
+     32              return log(x);
+     33          }
+     34          
+     35          double ml_sqrt(double x)
+     36          {
+     37              return sqrt(x);
+     38          }
+     39          
+     40          double ml_ceil(double x)
+     41          {
+     42              return ceil(x);
+     43          }
+     44          
+     45          double ml_floor(double x)
+     46          {
+     47              return floor(x);
+     48          }
+     49          
+     50          double ml_cos(double x)
+     51          {
+     52              return cos(x);
+     53          }
+     54          
+     55          double ml_sin(double x)
+     56          {
+     57              return sin(x);
+     58          }
+     59          
+     60          double ml_acos(double x)
+     61          {
+     62              return acos(x);
+     63          }
+     64          
+     65          double ml_pow(double x, double y)
+     66          {
+     67              return pow(x, y);
+     68          }
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       8   ml_acos
+         8   -> acos
+       8   ml_asin
+         8   -> asin
+       8   ml_atan
+         8   -> atan
+       8   ml_atan2
+         8   -> atan2
+       8   ml_ceil
+         8   -> ceil
+       8   ml_cos
+         8   -> cos
+       8   ml_floor
+         8   -> floor
+       8   ml_log
+         8   -> log
+       8   ml_pow
+         8   -> pow
+       8   ml_sin
+         8   -> sin
+       8   ml_sqrt
+         8   -> sqrt
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       8  ml_acos
+       8  ml_asin
+       8  ml_atan
+       8  ml_atan2
+       8  ml_ceil
+       8  ml_cos
+       8  ml_floor
+       8  ml_log
+       8  ml_pow
+       8  ml_sin
+       8  ml_sqrt
+
+ 
+ 88 bytes in section .text
+ 
+ 88 bytes of CODE memory
+
+Errors: none
+Warnings: none

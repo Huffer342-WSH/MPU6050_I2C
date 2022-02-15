@@ -1,0 +1,182 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:21
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\DeviceSupport\src\board-st_discovery.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\DeviceSupport\src\board-st_discovery.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\board-st_discovery.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\board-st_discovery.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\DeviceSupport\src\board-st_discovery.c
+      1          #include "stm32f4xx.h"
+      2          #include "stm32f4xx_usart.h" 
+      3          #include "stm32f4xx_rcc.h"
+      4          #include "i2c.h"
+      5          #include "uart.h"
+      6          #include "gpio.h"
+      7          #include "board-st_discovery.h"
+      8          
+      9          #define TICK_FREQ (1000u)
+     10          
+     11          volatile uint32_t g_ul_ms_ticks=0;
+     12          static volatile uint32_t TimingDelay=0;
+     13          unsigned long idle_time=0;
+     14          extern uint32_t SystemCoreClock; //168000000=168Mhz (original value)
+     15          
+     16          void board_init() 
+     17          {
+     18          	SystemCoreClockUpdate();                               // Update the system clock variable (might not have been set before)
+     19                                                                     // With this call, the core clock gets set to 56MHz
+     20              
+     21          	if (SysTick_Config (SystemCoreClock / TICK_FREQ)) {     // Setup SysTick Timer for 1 msec interrupts
+     22          		while (1);                                          // Handle Error
+     23          	}	
+     24          	
+     25          	Set_I2C_Retry(5);
+     26            
+     27          	/* Enable PWR APB1 Clock */
+     28          	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+     29          
+     30          	/* Allow access to Backup */
+     31          	PWR_BackupAccessCmd(ENABLE);
+     32          
+     33          	/* Reset RTC Domain */
+     34          	RCC_BackupResetCmd(ENABLE);
+     35          	RCC_BackupResetCmd(DISABLE);
+     36           
+     37          	//Configure Interrupts
+     38          	GPIO_Config();  
+     39          
+     40          	// Configure I2C
+     41          	I2cMaster_Init(); 
+     42          
+     43          	// Configure UART
+     44          	USART_Config(); 
+     45          }
+     46          
+     47          void mdelay(unsigned long nTime)
+     48          {
+     49          	TimingDelay = nTime;
+     50          	while(TimingDelay != 0);
+     51          }
+     52          
+     53          int get_tick_count(unsigned long *count)
+     54          {
+     55                  count[0] = g_ul_ms_ticks;
+     56          	return 0;
+     57          }
+     58          
+     59          void TimingDelay_Decrement(void)
+     60          {
+     61          	if (TimingDelay != 0x00)
+     62          		TimingDelay--;
+     63          }
+     64          
+     65          void TimeStamp_Increment(void)
+     66          {
+     67          	g_ul_ms_ticks++;
+     68          }
+     69          
+     70          void SysTick_Handler(void)
+     71          {
+     72            	TimingDelay_Decrement();
+     73              TimeStamp_Increment();
+     74          }
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   NVIC_SetPriority
+       8   SysTick_Config
+         8   -> NVIC_SetPriority
+       8   SysTick_Handler
+         8   -> TimeStamp_Increment
+         8   -> TimingDelay_Decrement
+       0   TimeStamp_Increment
+       0   TimingDelay_Decrement
+       8   board_init
+         8   -> GPIO_Config
+         8   -> I2cMaster_Init
+         8   -> PWR_BackupAccessCmd
+         8   -> RCC_APB1PeriphClockCmd
+         8   -> RCC_BackupResetCmd
+         8   -> Set_I2C_Retry
+         8   -> SysTick_Config
+         8   -> SystemCoreClockUpdate
+         8   -> USART_Config
+       0   get_tick_count
+       0   mdelay
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable6
+       4  ??DataTable6_1
+       4  ??DataTable6_2
+       4  ??DataTable6_3
+       4  ??DataTable6_4
+       4  ??DataTable6_5
+       4  ??DataTable6_6
+       4  ??DataTable6_7
+      34  NVIC_SetPriority
+      46  SysTick_Config
+      12  SysTick_Handler
+      12  TimeStamp_Increment
+       4  TimingDelay
+      20  TimingDelay_Decrement
+      76  board_init
+       4  g_ul_ms_ticks
+      10  get_tick_count
+       4  idle_time
+      14  mdelay
+
+ 
+  12 bytes in section .bss
+ 256 bytes in section .text
+ 
+ 256 bytes of CODE memory
+  12 bytes of DATA memory
+
+Errors: none
+Warnings: none

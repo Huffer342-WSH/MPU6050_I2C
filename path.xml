@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cdtprojectproperties>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.IncludePaths">
+<language name="s,S">
+
+</language>
+<language name="C 源文件">
+<includepath>Core/Inc</includepath>
+<includepath>Drivers/STM32F1xx_HAL_Driver/Inc</includepath>
+<includepath>Drivers/STM32F1xx_HAL_Driver/Inc/Legacy</includepath>
+<includepath>Drivers/CMSIS/Device/ST/STM32F1xx/Include</includepath>
+<includepath>Drivers/CMSIS/Include</includepath>
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/include</includepath>
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2</includepath>
+<includepath>Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3</includepath>
+<includepath>Middlewares/MPU6050_Motion_Driver/driver/eMPL</includepath>
+<includepath>Middlewares/MPU6050_Motion_Driver/driver/include</includepath>
+<includepath>Middlewares/MPU6050_Motion_Driver/eMPL-hal</includepath>
+<includepath>Middlewares/MPU6050_Motion_Driver/driver/stm32L</includepath>
+<includepath>Middlewares/MPU6050_Motion_Driver/mllite</includepath>
+<includepath>Middlewares/MPU6050_Motion_Driver/mpl</includepath>
+<includepath>Middlewares/MPU6050_Motion_Driver/porting</includepath>
+
+</language>
+<language name="目标文件">
+
+</language>
+</section>
+<section name="org.eclipse.cdt.internal.ui.wizards.settingswizards.Macros">
+<language name="s,S">
+<macro>
+<name>DEBUG</name><value/>
+</macro>
+
+</language>
+<language name="C 源文件">
+<macro>
+<name>DEBUG</name><value/>
+</macro>
+<macro>
+<name>USE_HAL_DRIVER</name><value/>
+</macro>
+<macro>
+<name>STM32F103xE</name><value/>
+</macro>
+<macro>
+<name>EMPL</name><value/>
+</macro>
+<macro>
+<name>MPL_LOG_NDEBUG</name><value>0</value>
+</macro>
+<macro>
+<name>MPU6050</name><value/>
+</macro>
+<macro>
+<name>USE_DMP</name><value/>
+</macro>
+<macro>
+<name>REMOVE_LOGGING</name><value/>
+</macro>
+<macro>
+<name>EMPL_TARGET_STM32F1</name><value/>
+</macro>
+
+</language>
+<language name="目标文件">
+
+</language>
+</section>
+</cdtprojectproperties>

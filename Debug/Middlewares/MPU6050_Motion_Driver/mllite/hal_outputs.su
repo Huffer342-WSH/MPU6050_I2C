@@ -1,0 +1,16 @@
+hal_outputs.c:58:5:inv_get_sensor_type_accelerometer	48	static
+hal_outputs.c:84:5:inv_get_sensor_type_linear_acceleration	56	static
+hal_outputs.c:107:5:inv_get_sensor_type_gravity	48	static
+hal_outputs.c:132:5:inv_get_sensor_type_gyroscope	48	static
+hal_outputs.c:155:5:inv_get_sensor_type_gyroscope_raw	48	static
+hal_outputs.c:196:5:inv_get_sensor_type_rotation_vector	32	static
+hal_outputs.c:227:5:inv_get_sensor_type_magnetic_field	32	static
+hal_outputs.c:250:13:inv_get_rotation	64	static
+hal_outputs.c:267:13:google_orientation	64	static
+hal_outputs.c:302:5:inv_get_sensor_type_orientation	24	static
+hal_outputs.c:317:13:inv_generate_hal_outputs	56	static
+hal_outputs.c:425:13:inv_stop_hal_outputs	16	static
+hal_outputs.c:436:13:inv_start_hal_outputs	16	static
+hal_outputs.c:456:13:inv_init_hal_outputs	16	static
+hal_outputs.c:471:13:inv_enable_hal_outputs	16	static
+hal_outputs.c:485:13:inv_disable_hal_outputs	16	static

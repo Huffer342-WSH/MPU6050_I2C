@@ -1,0 +1,737 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:30
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_cryp_aes.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_cryp_aes.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\stm32f4xx_cryp_aes.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\stm32f4xx_cryp_aes.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\STM32F4xx_StdPeriph_Driver\src\stm32f4xx_cryp_aes.c
+      1          /**
+      2            ******************************************************************************
+      3            * @file    stm32f4xx_cryp_aes.c
+      4            * @author  MCD Application Team
+      5            * @version V1.0.0
+      6            * @date    30-September-2011
+      7            * @brief   This file provides high level functions to encrypt and decrypt an 
+      8            *          input message using AES in ECB/CBC/CTR modes.
+      9            *          It uses the stm32f4xx_cryp.c/.h drivers to access the STM32F4xx CRYP
+     10            *          peripheral.
+     11            *
+     12            *  @verbatim
+     13            *
+     14            *          ===================================================================
+     15            *                                   How to use this driver
+     16            *          ===================================================================
+     17            *          1. Enable The CRYP controller clock using 
+     18            *            RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_CRYP, ENABLE); function.
+     19            *
+     20            *          2. Encrypt and decrypt using AES in ECB Mode using CRYP_AES_ECB()
+     21            *             function.
+     22            *
+     23            *          3. Encrypt and decrypt using AES in CBC Mode using CRYP_AES_CBC()
+     24            *             function.
+     25            *
+     26            *          4. Encrypt and decrypt using AES in CTR Mode using CRYP_AES_CTR()
+     27            *             function.
+     28            *
+     29            *  @endverbatim
+     30            *
+     31            ******************************************************************************
+     32            * @attention
+     33            *
+     34            * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+     35            * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+     36            * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
+     37            * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+     38            * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+     39            * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+     40            *
+     41            * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+     42            ******************************************************************************  
+     43            */
+     44          
+     45          /* Includes ------------------------------------------------------------------*/
+     46          #include "stm32f4xx_cryp.h"
+     47          
+     48          /** @addtogroup STM32F4xx_StdPeriph_Driver
+     49            * @{
+     50            */
+     51          
+     52          /** @defgroup CRYP 
+     53            * @brief CRYP driver modules
+     54            * @{
+     55            */
+     56          
+     57          /* Private typedef -----------------------------------------------------------*/
+     58          /* Private define ------------------------------------------------------------*/
+     59          #define AESBUSY_TIMEOUT    ((uint32_t) 0x00010000)
+     60          
+     61          /* Private macro -------------------------------------------------------------*/
+     62          /* Private variables ---------------------------------------------------------*/
+     63          /* Private function prototypes -----------------------------------------------*/
+     64          /* Private functions ---------------------------------------------------------*/
+     65          
+     66          /** @defgroup CRYP_Private_Functions
+     67            * @{
+     68            */ 
+     69          
+     70          /** @defgroup CRYP_Group6 High Level AES functions
+     71           *  @brief   High Level AES functions 
+     72           *
+     73          @verbatim   
+     74           ===============================================================================
+     75                                    High Level AES functions
+     76           ===============================================================================
+     77          
+     78          
+     79          @endverbatim
+     80            * @{
+     81            */
+     82          
+     83          /**
+     84            * @brief  Encrypt and decrypt using AES in ECB Mode
+     85            * @param  Mode: encryption or decryption Mode.
+     86            *          This parameter can be one of the following values:
+     87            *            @arg MODE_ENCRYPT: Encryption
+     88            *            @arg MODE_DECRYPT: Decryption
+     89            * @param  Key: Key used for AES algorithm.
+     90            * @param  Keysize: length of the Key, must be a 128, 192 or 256.
+     91            * @param  Input: pointer to the Input buffer.
+     92            * @param  Ilength: length of the Input buffer, must be a multiple of 16.
+     93            * @param  Output: pointer to the returned buffer.
+     94            * @retval An ErrorStatus enumeration value:
+     95            *          - SUCCESS: Operation done
+     96            *          - ERROR: Operation failed
+     97            */
+     98          ErrorStatus CRYP_AES_ECB(uint8_t Mode, uint8_t* Key, uint16_t Keysize,
+     99                                   uint8_t* Input, uint32_t Ilength, uint8_t* Output)
+    100          {
+    101            CRYP_InitTypeDef AES_CRYP_InitStructure;
+    102            CRYP_KeyInitTypeDef AES_CRYP_KeyInitStructure;
+    103            __IO uint32_t counter = 0;
+    104            uint32_t busystatus = 0;
+    105            ErrorStatus status = SUCCESS;
+    106            uint32_t keyaddr    = (uint32_t)Key;
+    107            uint32_t inputaddr  = (uint32_t)Input;
+    108            uint32_t outputaddr = (uint32_t)Output;
+    109            uint32_t i = 0;
+    110          
+    111            /* Crypto structures initialisation*/
+    112            CRYP_KeyStructInit(&AES_CRYP_KeyInitStructure);
+    113          
+    114            switch(Keysize)
+    115            {
+    116              case 128:
+    117              AES_CRYP_InitStructure.CRYP_KeySize = CRYP_KeySize_128b;
+    118              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    119              keyaddr+=4;
+    120              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    121              keyaddr+=4;
+    122              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    123              keyaddr+=4;
+    124              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    125              break;
+    126              case 192:
+    127              AES_CRYP_InitStructure.CRYP_KeySize  = CRYP_KeySize_192b;
+    128              AES_CRYP_KeyInitStructure.CRYP_Key1Left = __REV(*(uint32_t*)(keyaddr));
+    129              keyaddr+=4;
+    130              AES_CRYP_KeyInitStructure.CRYP_Key1Right= __REV(*(uint32_t*)(keyaddr));
+    131              keyaddr+=4;
+    132              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    133              keyaddr+=4;
+    134              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    135              keyaddr+=4;
+    136              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    137              keyaddr+=4;
+    138              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    139              break;
+    140              case 256:
+    141              AES_CRYP_InitStructure.CRYP_KeySize  = CRYP_KeySize_256b;
+    142              AES_CRYP_KeyInitStructure.CRYP_Key0Left = __REV(*(uint32_t*)(keyaddr));
+    143              keyaddr+=4;
+    144              AES_CRYP_KeyInitStructure.CRYP_Key0Right= __REV(*(uint32_t*)(keyaddr));
+    145              keyaddr+=4;
+    146              AES_CRYP_KeyInitStructure.CRYP_Key1Left = __REV(*(uint32_t*)(keyaddr));
+    147              keyaddr+=4;
+    148              AES_CRYP_KeyInitStructure.CRYP_Key1Right= __REV(*(uint32_t*)(keyaddr));
+    149              keyaddr+=4;
+    150              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    151              keyaddr+=4;
+    152              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    153              keyaddr+=4;
+    154              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    155              keyaddr+=4;
+    156              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    157              break;
+    158              default:
+    159              break;
+    160            }
+    161          
+    162            /*------------------ AES Decryption ------------------*/
+    163            if(Mode == MODE_DECRYPT) /* AES decryption */
+    164            {
+    165              /* Flush IN/OUT FIFOs */
+    166              CRYP_FIFOFlush();
+    167          
+    168              /* Crypto Init for Key preparation for decryption process */
+    169              AES_CRYP_InitStructure.CRYP_AlgoDir = CRYP_AlgoDir_Decrypt;
+    170              AES_CRYP_InitStructure.CRYP_AlgoMode = CRYP_AlgoMode_AES_Key;
+    171              AES_CRYP_InitStructure.CRYP_DataType = CRYP_DataType_32b;
+    172              CRYP_Init(&AES_CRYP_InitStructure);
+    173          
+    174              /* Key Initialisation */
+    175              CRYP_KeyInit(&AES_CRYP_KeyInitStructure);
+    176          
+    177              /* Enable Crypto processor */
+    178              CRYP_Cmd(ENABLE);
+    179          
+    180              /* wait until the Busy flag is RESET */
+    181              do
+    182              {
+    183                busystatus = CRYP_GetFlagStatus(CRYP_FLAG_BUSY);
+    184                counter++;
+    185              }while ((counter != AESBUSY_TIMEOUT) && (busystatus != RESET));
+    186          
+    187              if (busystatus != RESET)
+    188             {
+    189                 status = ERROR;
+    190              }
+    191              else
+    192              {
+    193                /* Crypto Init for decryption process */  
+    194                AES_CRYP_InitStructure.CRYP_AlgoDir = CRYP_AlgoDir_Decrypt;
+    195              }
+    196            }
+    197            /*------------------ AES Encryption ------------------*/
+    198            else /* AES encryption */
+    199            {
+    200          
+    201              CRYP_KeyInit(&AES_CRYP_KeyInitStructure);
+    202          
+    203              /* Crypto Init for Encryption process */
+    204              AES_CRYP_InitStructure.CRYP_AlgoDir  = CRYP_AlgoDir_Encrypt;
+    205            }
+    206          
+    207            AES_CRYP_InitStructure.CRYP_AlgoMode = CRYP_AlgoMode_AES_ECB;
+    208            AES_CRYP_InitStructure.CRYP_DataType = CRYP_DataType_8b;
+    209            CRYP_Init(&AES_CRYP_InitStructure);
+    210          
+    211            /* Flush IN/OUT FIFOs */
+    212            CRYP_FIFOFlush();
+    213          
+    214            /* Enable Crypto processor */
+    215            CRYP_Cmd(ENABLE);
+    216          
+    217            for(i=0; ((i<Ilength) && (status != ERROR)); i+=16)
+    218            {
+    219          
+    220              /* Write the Input block in the IN FIFO */
+    221              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    222              inputaddr+=4;
+    223              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    224              inputaddr+=4;
+    225              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    226              inputaddr+=4;
+    227              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    228              inputaddr+=4;
+    229          
+    230              /* Wait until the complete message has been processed */
+    231              counter = 0;
+    232              do
+    233              {
+    234                busystatus = CRYP_GetFlagStatus(CRYP_FLAG_BUSY);
+    235                counter++;
+    236              }while ((counter != AESBUSY_TIMEOUT) && (busystatus != RESET));
+    237          
+    238              if (busystatus != RESET)
+    239             {
+    240                 status = ERROR;
+    241              }
+    242              else
+    243              {
+    244          
+    245                /* Read the Output block from the Output FIFO */
+    246                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    247                outputaddr+=4;
+    248                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    249                outputaddr+=4;
+    250                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    251                outputaddr+=4;
+    252                *(uint32_t*)(outputaddr) = CRYP_DataOut(); 
+    253                outputaddr+=4;
+    254              }
+    255            }
+    256          
+    257            /* Disable Crypto */
+    258            CRYP_Cmd(DISABLE);
+    259          
+    260            return status; 
+    261          }
+    262          
+    263          /**
+    264            * @brief  Encrypt and decrypt using AES in CBC Mode
+    265            * @param  Mode: encryption or decryption Mode.
+    266            *          This parameter can be one of the following values:
+    267            *            @arg MODE_ENCRYPT: Encryption
+    268            *            @arg MODE_DECRYPT: Decryption
+    269            * @param  InitVectors: Initialisation Vectors used for AES algorithm.
+    270            * @param  Key: Key used for AES algorithm.
+    271            * @param  Keysize: length of the Key, must be a 128, 192 or 256.
+    272            * @param  Input: pointer to the Input buffer.
+    273            * @param  Ilength: length of the Input buffer, must be a multiple of 16.
+    274            * @param  Output: pointer to the returned buffer.
+    275            * @retval An ErrorStatus enumeration value:
+    276            *          - SUCCESS: Operation done
+    277            *          - ERROR: Operation failed
+    278            */
+    279          ErrorStatus CRYP_AES_CBC(uint8_t Mode, uint8_t InitVectors[16], uint8_t *Key,
+    280                                   uint16_t Keysize, uint8_t *Input, uint32_t Ilength,
+    281                                   uint8_t *Output)
+    282          {
+    283            CRYP_InitTypeDef AES_CRYP_InitStructure;
+    284            CRYP_KeyInitTypeDef AES_CRYP_KeyInitStructure;
+    285            CRYP_IVInitTypeDef AES_CRYP_IVInitStructure;
+    286            __IO uint32_t counter = 0;
+    287            uint32_t busystatus = 0;
+    288            ErrorStatus status = SUCCESS;
+    289            uint32_t keyaddr    = (uint32_t)Key;
+    290            uint32_t inputaddr  = (uint32_t)Input;
+    291            uint32_t outputaddr = (uint32_t)Output;
+    292            uint32_t ivaddr     = (uint32_t)InitVectors;
+    293            uint32_t i = 0;
+    294          
+    295            /* Crypto structures initialisation*/
+    296            CRYP_KeyStructInit(&AES_CRYP_KeyInitStructure);
+    297          
+    298            switch(Keysize)
+    299            {
+    300              case 128:
+    301              AES_CRYP_InitStructure.CRYP_KeySize = CRYP_KeySize_128b;
+    302              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    303              keyaddr+=4;
+    304              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    305              keyaddr+=4;
+    306              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    307              keyaddr+=4;
+    308              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    309              break;
+    310              case 192:
+    311              AES_CRYP_InitStructure.CRYP_KeySize  = CRYP_KeySize_192b;
+    312              AES_CRYP_KeyInitStructure.CRYP_Key1Left = __REV(*(uint32_t*)(keyaddr));
+    313              keyaddr+=4;
+    314              AES_CRYP_KeyInitStructure.CRYP_Key1Right= __REV(*(uint32_t*)(keyaddr));
+    315              keyaddr+=4;
+    316              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    317              keyaddr+=4;
+    318              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    319              keyaddr+=4;
+    320              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    321              keyaddr+=4;
+    322              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    323              break;
+    324              case 256:
+    325              AES_CRYP_InitStructure.CRYP_KeySize  = CRYP_KeySize_256b;
+    326              AES_CRYP_KeyInitStructure.CRYP_Key0Left = __REV(*(uint32_t*)(keyaddr));
+    327              keyaddr+=4;
+    328              AES_CRYP_KeyInitStructure.CRYP_Key0Right= __REV(*(uint32_t*)(keyaddr));
+    329              keyaddr+=4;
+    330              AES_CRYP_KeyInitStructure.CRYP_Key1Left = __REV(*(uint32_t*)(keyaddr));
+    331              keyaddr+=4;
+    332              AES_CRYP_KeyInitStructure.CRYP_Key1Right= __REV(*(uint32_t*)(keyaddr));
+    333              keyaddr+=4;
+    334              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    335              keyaddr+=4;
+    336              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    337              keyaddr+=4;
+    338              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    339              keyaddr+=4;
+    340              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    341              break;
+    342              default:
+    343              break;
+    344            }
+    345          
+    346            /* CRYP Initialization Vectors */
+    347            AES_CRYP_IVInitStructure.CRYP_IV0Left = __REV(*(uint32_t*)(ivaddr));
+    348            ivaddr+=4;
+    349            AES_CRYP_IVInitStructure.CRYP_IV0Right= __REV(*(uint32_t*)(ivaddr));
+    350            ivaddr+=4;
+    351            AES_CRYP_IVInitStructure.CRYP_IV1Left = __REV(*(uint32_t*)(ivaddr));
+    352            ivaddr+=4;
+    353            AES_CRYP_IVInitStructure.CRYP_IV1Right= __REV(*(uint32_t*)(ivaddr));
+    354          
+    355          
+    356            /*------------------ AES Decryption ------------------*/
+    357            if(Mode == MODE_DECRYPT) /* AES decryption */
+    358            {
+    359              /* Flush IN/OUT FIFOs */
+    360              CRYP_FIFOFlush();
+    361          
+    362              /* Crypto Init for Key preparation for decryption process */
+    363              AES_CRYP_InitStructure.CRYP_AlgoDir = CRYP_AlgoDir_Decrypt;
+    364              AES_CRYP_InitStructure.CRYP_AlgoMode = CRYP_AlgoMode_AES_Key;
+    365              AES_CRYP_InitStructure.CRYP_DataType = CRYP_DataType_32b;
+    366          
+    367              CRYP_Init(&AES_CRYP_InitStructure);
+    368          
+    369              /* Key Initialisation */
+    370              CRYP_KeyInit(&AES_CRYP_KeyInitStructure);
+    371          
+    372              /* Enable Crypto processor */
+    373              CRYP_Cmd(ENABLE);
+    374          
+    375              /* wait until the Busy flag is RESET */
+    376              do
+    377              {
+    378                busystatus = CRYP_GetFlagStatus(CRYP_FLAG_BUSY);
+    379                counter++;
+    380              }while ((counter != AESBUSY_TIMEOUT) && (busystatus != RESET));
+    381          
+    382              if (busystatus != RESET)
+    383             {
+    384                 status = ERROR;
+    385              }
+    386              else
+    387              {
+    388                /* Crypto Init for decryption process */  
+    389                AES_CRYP_InitStructure.CRYP_AlgoDir = CRYP_AlgoDir_Decrypt;
+    390              }
+    391            }
+    392            /*------------------ AES Encryption ------------------*/
+    393            else /* AES encryption */
+    394            {
+    395              CRYP_KeyInit(&AES_CRYP_KeyInitStructure);
+    396          
+    397              /* Crypto Init for Encryption process */
+    398              AES_CRYP_InitStructure.CRYP_AlgoDir  = CRYP_AlgoDir_Encrypt;
+    399            }
+    400            AES_CRYP_InitStructure.CRYP_AlgoMode = CRYP_AlgoMode_AES_CBC;
+    401            AES_CRYP_InitStructure.CRYP_DataType = CRYP_DataType_8b;
+    402            CRYP_Init(&AES_CRYP_InitStructure);
+    403          
+    404            /* CRYP Initialization Vectors */
+    405            CRYP_IVInit(&AES_CRYP_IVInitStructure);
+    406          
+    407            /* Flush IN/OUT FIFOs */
+    408            CRYP_FIFOFlush();
+    409          
+    410            /* Enable Crypto processor */
+    411            CRYP_Cmd(ENABLE);
+    412          
+    413          
+    414            for(i=0; ((i<Ilength) && (status != ERROR)); i+=16)
+    415            {
+    416          
+    417              /* Write the Input block in the IN FIFO */
+    418              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    419              inputaddr+=4;
+    420              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    421              inputaddr+=4;
+    422              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    423              inputaddr+=4;
+    424              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    425              inputaddr+=4;
+    426              /* Wait until the complete message has been processed */
+    427              counter = 0;
+    428              do
+    429              {
+    430                busystatus = CRYP_GetFlagStatus(CRYP_FLAG_BUSY);
+    431                counter++;
+    432              }while ((counter != AESBUSY_TIMEOUT) && (busystatus != RESET));
+    433          
+    434              if (busystatus != RESET)
+    435             {
+    436                 status = ERROR;
+    437              }
+    438              else
+    439              {
+    440          
+    441                /* Read the Output block from the Output FIFO */
+    442                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    443                outputaddr+=4;
+    444                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    445                outputaddr+=4;
+    446                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    447                outputaddr+=4;
+    448                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    449                outputaddr+=4;
+    450              }
+    451            }
+    452          
+    453            /* Disable Crypto */
+    454            CRYP_Cmd(DISABLE);
+    455          
+    456            return status;
+    457          }
+    458          
+    459          /**
+    460            * @brief  Encrypt and decrypt using AES in CTR Mode
+    461            * @param  Mode: encryption or decryption Mode.
+    462            *           This parameter can be one of the following values:
+    463            *            @arg MODE_ENCRYPT: Encryption
+    464            *            @arg MODE_DECRYPT: Decryption
+    465            * @param  InitVectors: Initialisation Vectors used for AES algorithm.
+    466            * @param  Key: Key used for AES algorithm.
+    467            * @param  Keysize: length of the Key, must be a 128, 192 or 256.
+    468            * @param  Input: pointer to the Input buffer.
+    469            * @param  Ilength: length of the Input buffer, must be a multiple of 16.
+    470            * @param  Output: pointer to the returned buffer.
+    471            * @retval An ErrorStatus enumeration value:
+    472            *          - SUCCESS: Operation done
+    473            *          - ERROR: Operation failed
+    474            */
+    475          ErrorStatus CRYP_AES_CTR(uint8_t Mode, uint8_t InitVectors[16], uint8_t *Key, 
+    476                                   uint16_t Keysize, uint8_t *Input, uint32_t Ilength,
+    477                                   uint8_t *Output)
+    478          {
+    479            CRYP_InitTypeDef AES_CRYP_InitStructure;
+    480            CRYP_KeyInitTypeDef AES_CRYP_KeyInitStructure;
+    481            CRYP_IVInitTypeDef AES_CRYP_IVInitStructure;
+    482            __IO uint32_t counter = 0;
+    483            uint32_t busystatus = 0;
+    484            ErrorStatus status = SUCCESS;
+    485            uint32_t keyaddr    = (uint32_t)Key;
+    486            uint32_t inputaddr  = (uint32_t)Input;
+    487            uint32_t outputaddr = (uint32_t)Output;
+    488            uint32_t ivaddr     = (uint32_t)InitVectors;
+    489            uint32_t i = 0;
+    490          
+    491            /* Crypto structures initialisation*/
+    492            CRYP_KeyStructInit(&AES_CRYP_KeyInitStructure);
+    493          
+    494            switch(Keysize)
+    495            {
+    496              case 128:
+    497              AES_CRYP_InitStructure.CRYP_KeySize = CRYP_KeySize_128b;
+    498              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    499              keyaddr+=4;
+    500              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    501              keyaddr+=4;
+    502              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    503              keyaddr+=4;
+    504              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    505              break;
+    506              case 192:
+    507              AES_CRYP_InitStructure.CRYP_KeySize  = CRYP_KeySize_192b;
+    508              AES_CRYP_KeyInitStructure.CRYP_Key1Left = __REV(*(uint32_t*)(keyaddr));
+    509              keyaddr+=4;
+    510              AES_CRYP_KeyInitStructure.CRYP_Key1Right= __REV(*(uint32_t*)(keyaddr));
+    511              keyaddr+=4;
+    512              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    513              keyaddr+=4;
+    514              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    515              keyaddr+=4;
+    516              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    517              keyaddr+=4;
+    518              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    519              break;
+    520              case 256:
+    521              AES_CRYP_InitStructure.CRYP_KeySize  = CRYP_KeySize_256b;
+    522              AES_CRYP_KeyInitStructure.CRYP_Key0Left = __REV(*(uint32_t*)(keyaddr));
+    523              keyaddr+=4;
+    524              AES_CRYP_KeyInitStructure.CRYP_Key0Right= __REV(*(uint32_t*)(keyaddr));
+    525              keyaddr+=4;
+    526              AES_CRYP_KeyInitStructure.CRYP_Key1Left = __REV(*(uint32_t*)(keyaddr));
+    527              keyaddr+=4;
+    528              AES_CRYP_KeyInitStructure.CRYP_Key1Right= __REV(*(uint32_t*)(keyaddr));
+    529              keyaddr+=4;
+    530              AES_CRYP_KeyInitStructure.CRYP_Key2Left = __REV(*(uint32_t*)(keyaddr));
+    531              keyaddr+=4;
+    532              AES_CRYP_KeyInitStructure.CRYP_Key2Right= __REV(*(uint32_t*)(keyaddr));
+    533              keyaddr+=4;
+    534              AES_CRYP_KeyInitStructure.CRYP_Key3Left = __REV(*(uint32_t*)(keyaddr));
+    535              keyaddr+=4;
+    536              AES_CRYP_KeyInitStructure.CRYP_Key3Right= __REV(*(uint32_t*)(keyaddr));
+    537              break;
+    538              default:
+    539              break;
+    540            }
+    541            /* CRYP Initialization Vectors */
+    542            AES_CRYP_IVInitStructure.CRYP_IV0Left = __REV(*(uint32_t*)(ivaddr));
+    543            ivaddr+=4;
+    544            AES_CRYP_IVInitStructure.CRYP_IV0Right= __REV(*(uint32_t*)(ivaddr));
+    545            ivaddr+=4;
+    546            AES_CRYP_IVInitStructure.CRYP_IV1Left = __REV(*(uint32_t*)(ivaddr));
+    547            ivaddr+=4;
+    548            AES_CRYP_IVInitStructure.CRYP_IV1Right= __REV(*(uint32_t*)(ivaddr));
+    549          
+    550            /* Key Initialisation */
+    551            CRYP_KeyInit(&AES_CRYP_KeyInitStructure);
+    552          
+    553            /*------------------ AES Decryption ------------------*/
+    554            if(Mode == MODE_DECRYPT) /* AES decryption */
+    555            {
+    556              /* Crypto Init for decryption process */
+    557              AES_CRYP_InitStructure.CRYP_AlgoDir = CRYP_AlgoDir_Decrypt;
+    558            }
+    559            /*------------------ AES Encryption ------------------*/
+    560            else /* AES encryption */
+    561            {
+    562              /* Crypto Init for Encryption process */
+    563              AES_CRYP_InitStructure.CRYP_AlgoDir = CRYP_AlgoDir_Encrypt;
+    564            }
+    565            AES_CRYP_InitStructure.CRYP_AlgoMode = CRYP_AlgoMode_AES_CTR;
+    566            AES_CRYP_InitStructure.CRYP_DataType = CRYP_DataType_8b;
+    567            CRYP_Init(&AES_CRYP_InitStructure);
+    568          
+    569            /* CRYP Initialization Vectors */
+    570            CRYP_IVInit(&AES_CRYP_IVInitStructure);
+    571          
+    572            /* Flush IN/OUT FIFOs */
+    573            CRYP_FIFOFlush();
+    574          
+    575            /* Enable Crypto processor */
+    576            CRYP_Cmd(ENABLE);
+    577          
+    578            for(i=0; ((i<Ilength) && (status != ERROR)); i+=16)
+    579            {
+    580          
+    581              /* Write the Input block in the IN FIFO */
+    582              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    583              inputaddr+=4;
+    584              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    585              inputaddr+=4;
+    586              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    587              inputaddr+=4;
+    588              CRYP_DataIn(*(uint32_t*)(inputaddr));
+    589              inputaddr+=4;
+    590              /* Wait until the complete message has been processed */
+    591              counter = 0;
+    592              do
+    593              {
+    594                busystatus = CRYP_GetFlagStatus(CRYP_FLAG_BUSY);
+    595                counter++;
+    596              }while ((counter != AESBUSY_TIMEOUT) && (busystatus != RESET));
+    597          
+    598              if (busystatus != RESET)
+    599             {
+    600                 status = ERROR;
+    601              }
+    602              else
+    603              {
+    604          
+    605                /* Read the Output block from the Output FIFO */
+    606                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    607                outputaddr+=4;
+    608                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    609                outputaddr+=4;
+    610                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    611                outputaddr+=4;
+    612                *(uint32_t*)(outputaddr) = CRYP_DataOut();
+    613                outputaddr+=4;
+    614              }
+    615            }
+    616            /* Disable Crypto */
+    617            CRYP_Cmd(DISABLE);
+    618          
+    619            return status;
+    620          }
+    621          /**
+    622            * @}
+    623            */ 
+    624          
+    625          /**
+    626            * @}
+    627            */ 
+    628          
+    629          /**
+    630            * @}
+    631            */ 
+    632          
+    633          /**
+    634            * @}
+    635            */ 
+    636          
+    637          /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+    638          
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      96   CRYP_AES_CBC
+        96   -> CRYP_Cmd
+        96   -> CRYP_DataIn
+        96   -> CRYP_DataOut
+        96   -> CRYP_FIFOFlush
+        96   -> CRYP_GetFlagStatus
+        96   -> CRYP_IVInit
+        96   -> CRYP_Init
+        96   -> CRYP_KeyInit
+        96   -> CRYP_KeyStructInit
+      96   CRYP_AES_CTR
+        96   -> CRYP_Cmd
+        96   -> CRYP_DataIn
+        96   -> CRYP_DataOut
+        96   -> CRYP_FIFOFlush
+        96   -> CRYP_GetFlagStatus
+        96   -> CRYP_IVInit
+        96   -> CRYP_Init
+        96   -> CRYP_KeyInit
+        96   -> CRYP_KeyStructInit
+      80   CRYP_AES_ECB
+        80   -> CRYP_Cmd
+        80   -> CRYP_DataIn
+        80   -> CRYP_DataOut
+        80   -> CRYP_FIFOFlush
+        80   -> CRYP_GetFlagStatus
+        80   -> CRYP_Init
+        80   -> CRYP_KeyInit
+        80   -> CRYP_KeyStructInit
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+     548  CRYP_AES_CBC
+     476  CRYP_AES_CTR
+     554  CRYP_AES_ECB
+
+ 
+ 1 578 bytes in section .text
+ 
+ 1 578 bytes of CODE memory
+
+Errors: none
+Warnings: none

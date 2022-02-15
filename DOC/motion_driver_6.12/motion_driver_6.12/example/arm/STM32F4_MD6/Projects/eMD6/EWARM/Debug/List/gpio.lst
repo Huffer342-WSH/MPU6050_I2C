@@ -1,0 +1,184 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:22
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\Peripheral\src\gpio.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\Peripheral\src\gpio.c -D
+#        USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D MPU9250
+#        -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\gpio.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\gpio.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\Peripheral\src\gpio.c
+      1          /*******************************************************************************
+      2          File    : Gpio.c
+      3          Purpose : 
+      4          ********************************** Includes ***********************************/
+      5          #include "stm32f4xx.h"
+      6          #include "stm32f4xx_gpio.h" 
+      7          #include "misc.h" 
+      8          #include "stm32f4xx_exti.h"
+      9          #include "stm32f4xx_rcc.h"
+     10          #include "stm32f4xx_syscfg.h"
+     11          
+     12          #include "GPIO.h"
+     13          
+     14          /********************************* Defines ************************************/
+     15          
+     16          //changed PIN A0 to PIN A1 back, to match low power modes 
+     17          
+     18          #define INVEN_INT_PIN                         GPIO_Pin_1
+     19          #define INVEN_INT_GPIO_PORT                   GPIOA
+     20          #define INVEN_INT_GPIO_CLK                    RCC_AHB1Periph_GPIOA
+     21          #define INVEN_INT_EXTI_PORT                   EXTI_PortSourceGPIOA
+     22          #define INVEN_INT_EXTI_PIN                    EXTI_PinSource1
+     23          #define INVEN_INT_EXTI_LINE                   EXTI_Line1
+     24          #define INVEN_INT_EXTI_IRQ                    EXTI1_IRQn
+     25          
+     26          /**********************************Globals ************************************/
+     27          /********************************* Prototypes *********************************/
+     28          
+     29          /***********************************Functions *********************************/
+     30          void GPIO_Config(void)
+     31          {
+     32          
+     33            GPIO_InitTypeDef   GPIO_InitStructure;
+     34            NVIC_InitTypeDef   NVIC_InitStructure;
+     35            EXTI_InitTypeDef   EXTI_InitStructure;
+     36          
+     37          //  GPIO_DeInit(GPIOA);
+     38          //  GPIO_DeInit(GPIOC);
+     39            
+     40            /* Enable GPIOB clock */
+     41            RCC_AHB1PeriphClockCmd(INVEN_INT_GPIO_CLK, ENABLE);
+     42            /* Enable SYSCFG clock */
+     43            RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+     44            
+     45            /* Configure invensense sensor interrupt pin as input floating */
+     46            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+     47            GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+     48            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+     49            GPIO_InitStructure.GPIO_Pin = INVEN_INT_PIN;
+     50            GPIO_Init(INVEN_INT_GPIO_PORT, &GPIO_InitStructure); //GPIOA
+     51          
+     52            /* Connect EXTI Line to inv sensor interrupt pin */
+     53            SYSCFG_EXTILineConfig(INVEN_INT_EXTI_PORT, INVEN_INT_EXTI_PIN);
+     54          
+     55            /* Configure EXTI Line1 */
+     56            EXTI_InitStructure.EXTI_Line = INVEN_INT_EXTI_LINE;
+     57            EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+     58            EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;  
+     59            EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+     60            EXTI_Init(&EXTI_InitStructure);
+     61          
+     62            /* Enable and set EXTI Line Interrupt to the highest priority */
+     63            NVIC_InitStructure.NVIC_IRQChannel = INVEN_INT_EXTI_IRQ;
+     64            NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x00;
+     65            NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x00;
+     66            NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+     67            NVIC_Init(&NVIC_InitStructure);
+     68          }
+     69          
+     70          void EnableInvInterrupt(void)
+     71          {
+     72            EXTI_InitTypeDef   EXTI_InitStructure;
+     73            /* Configure EXTI Line1 */
+     74            EXTI_InitStructure.EXTI_Line = INVEN_INT_EXTI_LINE;
+     75            EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+     76            EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+     77            EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+     78            EXTI_Init(&EXTI_InitStructure);
+     79          }
+     80          void DisableInvInterrupt(void)
+     81          {
+     82            EXTI_InitTypeDef   EXTI_InitStructure;
+     83              /* Configure EXTI Line1 */
+     84            EXTI_InitStructure.EXTI_Line = INVEN_INT_EXTI_LINE;
+     85            EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+     86            EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+     87            EXTI_InitStructure.EXTI_LineCmd = DISABLE;
+     88            EXTI_Init(&EXTI_InitStructure);
+     89            EXTI_ClearITPendingBit(INVEN_INT_EXTI_LINE);
+     90          }
+     91          
+     92          void InvIntHandler(void)
+     93          {
+     94          
+     95            /* Clear the EXTI line 1 pending bit */
+     96             EXTI_ClearITPendingBit(INVEN_INT_EXTI_LINE);
+     97          
+     98          }
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      16   DisableInvInterrupt
+        16   -> EXTI_ClearITPendingBit
+        16   -> EXTI_Init
+      16   EnableInvInterrupt
+        16   -> EXTI_Init
+      24   GPIO_Config
+        24   -> EXTI_Init
+        24   -> GPIO_Init
+        24   -> NVIC_Init
+        24   -> RCC_AHB1PeriphClockCmd
+        24   -> RCC_APB2PeriphClockCmd
+        24   -> SYSCFG_EXTILineConfig
+       8   InvIntHandler
+         8   -> EXTI_ClearITPendingBit
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable0
+      40  DisableInvInterrupt
+      34  EnableInvInterrupt
+     122  GPIO_Config
+      10  InvIntHandler
+
+ 
+ 210 bytes in section .text
+ 
+ 210 bytes of CODE memory
+
+Errors: none
+Warnings: none

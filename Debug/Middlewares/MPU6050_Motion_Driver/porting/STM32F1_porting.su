@@ -1,0 +1,4 @@
+STM32F1_porting.c:5:13:I2Cx_Error	16	static
+STM32F1_porting.c:21:5:Sensors_I2C_ReadRegister	40	static
+STM32F1_porting.c:56:5:Sensors_I2C_WriteRegister	40	static
+STM32F1_porting.c:82:13:get_ms_user	16	static

@@ -1,0 +1,372 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:28
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\DeviceSupport\src\stm32f4_discovery.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\DeviceSupport\src\stm32f4_discovery.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\stm32f4_discovery.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\stm32f4_discovery.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\DeviceSupport\src\stm32f4_discovery.c
+      1          /**
+      2            ******************************************************************************
+      3            * @file    stm32f4_discovery.c
+      4            * @author  MCD Application Team
+      5            * @version V1.1.0
+      6            * @date    28-October-2011
+      7            * @brief   This file provides set of firmware functions to manage Leds and
+      8            *          push-button available on STM32F4-Discovery Kit from STMicroelectronics.
+      9            ******************************************************************************
+     10            * @attention
+     11            *
+     12            * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+     13            * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+     14            * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
+     15            * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+     16            * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+     17            * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+     18            *
+     19            * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+     20            ******************************************************************************
+     21            */ 
+     22            
+     23          /* Includes ------------------------------------------------------------------*/
+     24          #include "stm32f4_discovery.h"
+     25          #include "stm32f4xx_gpio.h" 
+     26          #include "stm32f4xx_exti.h"
+     27          #include "stm32f4xx_rcc.h"
+     28          #include "stm32f4xx_syscfg.h"
+     29          #include "misc.h" 
+     30          
+     31          /** @addtogroup Utilities
+     32            * @{
+     33            */ 
+     34          
+     35          /** @addtogroup STM32F4_DISCOVERY
+     36            * @{
+     37            */   
+     38              
+     39          /** @defgroup STM32F4_DISCOVERY_LOW_LEVEL 
+     40            * @brief This file provides set of firmware functions to manage Leds and push-button
+     41            *        available on STM32F4-Discovery Kit from STMicroelectronics.
+     42            * @{
+     43            */ 
+     44          
+     45          /** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_TypesDefinitions
+     46            * @{
+     47            */ 
+     48          /**
+     49            * @}
+     50            */ 
+     51          
+     52          
+     53          /** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Defines
+     54            * @{
+     55            */ 
+     56          /**
+     57            * @}
+     58            */ 
+     59          
+     60          
+     61          /** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Macros
+     62            * @{
+     63            */ 
+     64          /**
+     65            * @}
+     66            */ 
+     67          
+     68          
+     69          /** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Variables
+     70            * @{
+     71            */ 
+     72          GPIO_TypeDef* GPIO_PORT[LEDn] = {LED4_GPIO_PORT, LED3_GPIO_PORT, LED5_GPIO_PORT,
+     73                                           LED6_GPIO_PORT};
+     74          const uint16_t GPIO_PIN[LEDn] = {LED4_PIN, LED3_PIN, LED5_PIN,
+     75                                           LED6_PIN};
+     76          const uint32_t GPIO_CLK[LEDn] = {LED4_GPIO_CLK, LED3_GPIO_CLK, LED5_GPIO_CLK,
+     77                                           LED6_GPIO_CLK};
+     78          
+     79          GPIO_TypeDef* BUTTON_PORT[BUTTONn] = {USER_BUTTON_GPIO_PORT }; 
+     80          
+     81          const uint16_t BUTTON_PIN[BUTTONn] = {USER_BUTTON_PIN }; 
+     82          
+     83          const uint32_t BUTTON_CLK[BUTTONn] = {USER_BUTTON_GPIO_CLK };
+     84          
+     85          const uint16_t BUTTON_EXTI_LINE[BUTTONn] = {USER_BUTTON_EXTI_LINE };
+     86          
+     87          const uint8_t BUTTON_PORT_SOURCE[BUTTONn] = {USER_BUTTON_EXTI_PORT_SOURCE};
+     88          								 
+     89          const uint8_t BUTTON_PIN_SOURCE[BUTTONn] = {USER_BUTTON_EXTI_PIN_SOURCE }; 
+     90          const uint8_t BUTTON_IRQn[BUTTONn] = {USER_BUTTON_EXTI_IRQn };
+     91          
+     92          NVIC_InitTypeDef   NVIC_InitStructure;
+     93          
+     94          /**
+     95            * @}
+     96            */ 
+     97          
+     98          
+     99          /** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_FunctionPrototypes
+    100            * @{
+    101            */ 
+    102          
+    103          /**
+    104            * @}
+    105            */ 
+    106          
+    107          /** @defgroup STM32F4_DISCOVERY_LOW_LEVEL_Private_Functions
+    108            * @{
+    109            */ 
+    110          
+    111          /**
+    112            * @brief  Configures LED GPIO.
+    113            * @param  Led: Specifies the Led to be configured. 
+    114            *   This parameter can be one of following parameters:
+    115            *     @arg LED4
+    116            *     @arg LED3
+    117            *     @arg LED5
+    118            *     @arg LED6
+    119            * @retval None
+    120            */
+    121          void STM_EVAL_LEDInit(Led_TypeDef Led)
+    122          {
+    123            GPIO_InitTypeDef  GPIO_InitStructure;
+    124            
+    125            /* Enable the GPIO_LED Clock */
+    126            RCC_AHB1PeriphClockCmd(GPIO_CLK[Led], ENABLE);
+    127          
+    128            /* Configure the GPIO_LED pin */
+    129            GPIO_InitStructure.GPIO_Pin = GPIO_PIN[Led];
+    130            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    131            GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    132            GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    133            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    134            GPIO_Init(GPIO_PORT[Led], &GPIO_InitStructure);
+    135          }
+    136          
+    137          /**
+    138            * @brief  Turns selected LED On.
+    139            * @param  Led: Specifies the Led to be set on. 
+    140            *   This parameter can be one of following parameters:
+    141            *     @arg LED4
+    142            *     @arg LED3
+    143            *     @arg LED5
+    144            *     @arg LED6  
+    145            * @retval None
+    146            */
+    147          void STM_EVAL_LEDOn(Led_TypeDef Led)
+    148          {
+    149            GPIO_PORT[Led]->BSRRL = GPIO_PIN[Led];
+    150          }
+    151          
+    152          /**
+    153            * @brief  Turns selected LED Off.
+    154            * @param  Led: Specifies the Led to be set off. 
+    155            *   This parameter can be one of following parameters:
+    156            *     @arg LED4
+    157            *     @arg LED3
+    158            *     @arg LED5
+    159            *     @arg LED6 
+    160            * @retval None
+    161            */
+    162          void STM_EVAL_LEDOff(Led_TypeDef Led)
+    163          {
+    164            GPIO_PORT[Led]->BSRRH = GPIO_PIN[Led];  
+    165          }
+    166          
+    167          /**
+    168            * @brief  Toggles the selected LED.
+    169            * @param  Led: Specifies the Led to be toggled. 
+    170            *   This parameter can be one of following parameters:
+    171            *     @arg LED4
+    172            *     @arg LED3
+    173            *     @arg LED5
+    174            *     @arg LED6  
+    175            * @retval None
+    176            */
+    177          void STM_EVAL_LEDToggle(Led_TypeDef Led)
+    178          {
+    179            GPIO_PORT[Led]->ODR ^= GPIO_PIN[Led];
+    180          }
+    181          
+    182          /**
+    183            * @brief  Configures Button GPIO and EXTI Line.
+    184            * @param  Button: Specifies the Button to be configured.
+    185            *   This parameter should be: BUTTON_USER
+    186            * @param  Button_Mode: Specifies Button mode.
+    187            *   This parameter can be one of following parameters:   
+    188            *     @arg BUTTON_MODE_GPIO: Button will be used as simple IO 
+    189            *     @arg BUTTON_MODE_EXTI: Button will be connected to EXTI line with interrupt
+    190            *                            generation capability  
+    191            * @retval None
+    192            */
+    193          void STM_EVAL_PBInit(Button_TypeDef Button, ButtonMode_TypeDef Button_Mode)
+    194          {
+    195            GPIO_InitTypeDef GPIO_InitStructure;
+    196            EXTI_InitTypeDef EXTI_InitStructure;
+    197            NVIC_InitTypeDef NVIC_InitStructure;
+    198          
+    199            /* Enable the BUTTON Clock */
+    200            RCC_AHB1PeriphClockCmd(BUTTON_CLK[Button], ENABLE);
+    201            RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+    202          
+    203            /* Configure Button pin as input */
+    204            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    205            GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    206            GPIO_InitStructure.GPIO_Pin = BUTTON_PIN[Button];
+    207            GPIO_Init(BUTTON_PORT[Button], &GPIO_InitStructure);
+    208          
+    209            if (Button_Mode == BUTTON_MODE_EXTI)
+    210            {
+    211              /* Connect Button EXTI Line to Button GPIO Pin */
+    212              SYSCFG_EXTILineConfig(BUTTON_PORT_SOURCE[Button], BUTTON_PIN_SOURCE[Button]);
+    213          
+    214              /* Configure Button EXTI line */
+    215              EXTI_InitStructure.EXTI_Line = BUTTON_EXTI_LINE[Button];
+    216              EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+    217              EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;  
+    218              EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    219              EXTI_Init(&EXTI_InitStructure);
+    220          
+    221              /* Enable and set Button EXTI Interrupt to the lowest priority */
+    222              NVIC_InitStructure.NVIC_IRQChannel = BUTTON_IRQn[Button];
+    223              NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x0F;
+    224              NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x0F;
+    225              NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    226          
+    227              NVIC_Init(&NVIC_InitStructure); 
+    228            }
+    229          }
+    230          
+    231          /**
+    232            * @brief  Returns the selected Button state.
+    233            * @param  Button: Specifies the Button to be checked.
+    234            *   This parameter should be: BUTTON_USER  
+    235            * @retval The Button GPIO pin value.
+    236            */
+    237          uint32_t STM_EVAL_PBGetState(Button_TypeDef Button)
+    238          {
+    239            return GPIO_ReadInputDataBit(BUTTON_PORT[Button], BUTTON_PIN[Button]);
+    240          }
+    241          
+    242          /**
+    243            * @}
+    244            */ 
+    245          
+    246          /**
+    247            * @}
+    248            */ 
+    249          
+    250          /**
+    251            * @}
+    252            */   
+    253          
+    254          /**
+    255            * @}
+    256            */ 
+    257              
+    258          /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      16   STM_EVAL_LEDInit
+        16   -> GPIO_Init
+        16   -> RCC_AHB1PeriphClockCmd
+       0   STM_EVAL_LEDOff
+       0   STM_EVAL_LEDOn
+       0   STM_EVAL_LEDToggle
+       8   STM_EVAL_PBGetState
+         8   -> GPIO_ReadInputDataBit
+      32   STM_EVAL_PBInit
+        32   -> EXTI_Init
+        32   -> GPIO_Init
+        32   -> NVIC_Init
+        32   -> RCC_AHB1PeriphClockCmd
+        32   -> RCC_APB2PeriphClockCmd
+        32   -> SYSCFG_EXTILineConfig
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable5
+       4  ??DataTable5_1
+       4  ??DataTable5_2
+       4  ??DataTable5_3
+       4  ??DataTable5_4
+       4  ??DataTable5_5
+       4  ??DataTable5_6
+       4  ??DataTable5_7
+       4  ??DataTable5_8
+       4  ??DataTable5_9
+       4  BUTTON_CLK
+       2  BUTTON_EXTI_LINE
+       1  BUTTON_IRQn
+       2  BUTTON_PIN
+       1  BUTTON_PIN_SOURCE
+       4  BUTTON_PORT
+       1  BUTTON_PORT_SOURCE
+      16  GPIO_CLK
+       8  GPIO_PIN
+      16  GPIO_PORT
+       4  NVIC_InitStructure
+      68  STM_EVAL_LEDInit
+      20  STM_EVAL_LEDOff
+      20  STM_EVAL_LEDOn
+      32  STM_EVAL_LEDToggle
+      24  STM_EVAL_PBGetState
+     162  STM_EVAL_PBInit
+
+ 
+   4 bytes in section .bss
+  20 bytes in section .data
+  35 bytes in section .rodata
+ 366 bytes in section .text
+ 
+ 366 bytes of CODE  memory
+  35 bytes of CONST memory
+  24 bytes of DATA  memory
+
+Errors: none
+Warnings: none

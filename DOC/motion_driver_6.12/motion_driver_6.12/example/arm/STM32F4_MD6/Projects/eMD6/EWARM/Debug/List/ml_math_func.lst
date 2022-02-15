@@ -1,0 +1,1012 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:26
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\ml_math_func.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\ml_math_func.c -D
+#        USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D MPU9250
+#        -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ml_math_func.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ml_math_func.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\ml_math_func.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          
+      8          /*******************************************************************************
+      9           *
+     10           * $Id:$
+     11           *
+     12           ******************************************************************************/
+     13          
+     14          /**
+     15           *   @defgroup  ML_MATH_FUNC ml_math_func
+     16           *   @brief     Motion Library - Math Functions
+     17           *              Common math functions the Motion Library
+     18           *
+     19           *   @{
+     20           *       @file ml_math_func.c
+     21           *       @brief Math Functions.
+     22           */
+     23          
+     24          #include "mlmath.h"
+     25          #include "ml_math_func.h"
+     26          #include "mlinclude.h"
+     27          #include <string.h>
+     28          
+     29          #ifdef EMPL
+     30          #define TABLE_SIZE (256)
+     31          
+     32          /* TODO: If memory becomes a big issue, we can just store the data for a single
+     33           * quadrant and transform the inputs and outputs of the lookup functions.
+     34           */
+     35          const float sin_lookup[TABLE_SIZE] = {
+     36              0.000000f, 0.024541f, 0.049068f, 0.073565f, 0.098017f, 0.122411f, 0.146730f, 0.170962f,
+     37              0.195090f, 0.219101f, 0.242980f, 0.266713f, 0.290285f, 0.313682f, 0.336890f, 0.359895f,
+     38              0.382683f, 0.405241f, 0.427555f, 0.449611f, 0.471397f, 0.492898f, 0.514103f, 0.534998f,
+     39              0.555570f, 0.575808f, 0.595699f, 0.615232f, 0.634393f, 0.653173f, 0.671559f, 0.689541f,
+     40              0.707107f, 0.724247f, 0.740951f, 0.757209f, 0.773010f, 0.788346f, 0.803208f, 0.817585f,
+     41              0.831470f, 0.844854f, 0.857729f, 0.870087f, 0.881921f, 0.893224f, 0.903989f, 0.914210f,
+     42              0.923880f, 0.932993f, 0.941544f, 0.949528f, 0.956940f, 0.963776f, 0.970031f, 0.975702f,
+     43              0.980785f, 0.985278f, 0.989177f, 0.992480f, 0.995185f, 0.997290f, 0.998795f, 0.999699f,
+     44              1.000000f, 0.999699f, 0.998795f, 0.997290f, 0.995185f, 0.992480f, 0.989177f, 0.985278f,
+     45              0.980785f, 0.975702f, 0.970031f, 0.963776f, 0.956940f, 0.949528f, 0.941544f, 0.932993f,
+     46              0.923880f, 0.914210f, 0.903989f, 0.893224f, 0.881921f, 0.870087f, 0.857729f, 0.844854f,
+     47              0.831470f, 0.817585f, 0.803208f, 0.788346f, 0.773010f, 0.757209f, 0.740951f, 0.724247f,
+     48              0.707107f, 0.689541f, 0.671559f, 0.653173f, 0.634393f, 0.615232f, 0.595699f, 0.575808f,
+     49              0.555570f, 0.534998f, 0.514103f, 0.492898f, 0.471397f, 0.449611f, 0.427555f, 0.405241f,
+     50              0.382683f, 0.359895f, 0.336890f, 0.313682f, 0.290285f, 0.266713f, 0.242980f, 0.219101f,
+     51              0.195091f, 0.170962f, 0.146731f, 0.122411f, 0.098017f, 0.073565f, 0.049068f, 0.024541f,
+     52              0.000000f, -0.024541f, -0.049067f, -0.073564f, -0.098017f, -0.122411f, -0.146730f, -0.170962f,
+     53              -0.195090f, -0.219101f, -0.242980f, -0.266713f, -0.290284f, -0.313682f, -0.336890f, -0.359895f,
+     54              -0.382683f, -0.405241f, -0.427555f, -0.449611f, -0.471397f, -0.492898f, -0.514103f, -0.534997f,
+     55              -0.555570f, -0.575808f, -0.595699f, -0.615231f, -0.634393f, -0.653173f, -0.671559f, -0.689540f,
+     56              -0.707107f, -0.724247f, -0.740951f, -0.757209f, -0.773010f, -0.788346f, -0.803207f, -0.817585f,
+     57              -0.831469f, -0.844853f, -0.857729f, -0.870087f, -0.881921f, -0.893224f, -0.903989f, -0.914210f,
+     58              -0.923880f, -0.932993f, -0.941544f, -0.949528f, -0.956940f, -0.963776f, -0.970031f, -0.975702f,
+     59              -0.980785f, -0.985278f, -0.989176f, -0.992480f, -0.995185f, -0.997290f, -0.998795f, -0.999699f,
+     60              -1.000000f, -0.999699f, -0.998795f, -0.997290f, -0.995185f, -0.992480f, -0.989177f, -0.985278f,
+     61              -0.980785f, -0.975702f, -0.970031f, -0.963776f, -0.956940f, -0.949528f, -0.941544f, -0.932993f,
+     62              -0.923880f, -0.914210f, -0.903989f, -0.893224f, -0.881921f, -0.870087f, -0.857729f, -0.844854f,
+     63              -0.831470f, -0.817585f, -0.803208f, -0.788347f, -0.773011f, -0.757209f, -0.740951f, -0.724247f,
+     64              -0.707107f, -0.689541f, -0.671559f, -0.653173f, -0.634394f, -0.615232f, -0.595699f, -0.575808f,
+     65              -0.555570f, -0.534998f, -0.514103f, -0.492898f, -0.471397f, -0.449612f, -0.427555f, -0.405241f,
+     66              -0.382684f, -0.359895f, -0.336890f, -0.313682f, -0.290285f, -0.266713f, -0.242981f, -0.219102f,
+     67              -0.195091f, -0.170962f, -0.146731f, -0.122411f, -0.098017f, -0.073565f, -0.049068f, -0.024542f
+     68          };
+     69          
+     70          float inv_sinf(float x)
+     71          {
+     72              int index = (unsigned int)((x * (TABLE_SIZE>>1)) / 3.14159f) % TABLE_SIZE;
+     73              return sin_lookup[index];
+     74          }
+     75          
+     76          float inv_cosf(float x)
+     77          {
+     78              int index = ((unsigned int)((x * (TABLE_SIZE>>1)) / 3.14159f) + (TABLE_SIZE>>2)) % TABLE_SIZE;
+     79              return sin_lookup[index];
+     80          }
+     81          #endif
+     82          
+     83          /** @internal
+     84           * Does the cross product of compass by gravity, then converts that
+     85           * to the world frame using the quaternion, then computes the angle that
+     86           * is made.
+     87           *
+     88           * @param[in] compass Compass Vector (Body Frame), length 3
+     89           * @param[in] grav Gravity Vector (Body Frame), length 3
+     90           * @param[in] quat Quaternion, Length 4
+     91           * @return Angle Cross Product makes after quaternion rotation.
+     92           */
+     93          float inv_compass_angle(const long *compass, const long *grav, const long *quat)
+     94          {
+     95              long cgcross[4], q1[4], q2[4], qi[4];
+     96              float angW;
+     97          
+     98              // Compass cross Gravity
+     99              cgcross[0] = 0L;
+    100              cgcross[1] = inv_q30_mult(compass[1], grav[2]) - inv_q30_mult(compass[2], grav[1]);
+    101              cgcross[2] = inv_q30_mult(compass[2], grav[0]) - inv_q30_mult(compass[0], grav[2]);
+    102              cgcross[3] = inv_q30_mult(compass[0], grav[1]) - inv_q30_mult(compass[1], grav[0]);
+    103          
+    104              // Now convert cross product into world frame
+    105              inv_q_mult(quat, cgcross, q1);
+    106              inv_q_invert(quat, qi);
+    107              inv_q_mult(q1, qi, q2);
+    108          
+    109              // Protect against atan2 of 0,0
+    110              if ((q2[2] == 0L) && (q2[1] == 0L))
+    111                  return 0.f;
+    112          
+    113              // This is the unfiltered heading correction
+    114              angW = -atan2f(inv_q30_to_float(q2[2]), inv_q30_to_float(q2[1]));
+    115              return angW;
+    116          }
+    117          
+    118          /**
+    119           *  @brief  The gyro data magnitude squared :
+    120           *          (1 degree per second)^2 = 2^6 = 2^GYRO_MAG_SQR_SHIFT.
+    121           * @param[in] gyro Gyro data scaled with 1 dps = 2^16
+    122           *  @return the computed magnitude squared output of the gyroscope.
+    123           */
+    124          unsigned long inv_get_gyro_sum_of_sqr(const long *gyro)
+    125          {
+    126              unsigned long gmag = 0;
+    127              long temp;
+    128              int kk;
+    129          
+    130              for (kk = 0; kk < 3; ++kk) {
+    131                  temp = gyro[kk] >> (16 - (GYRO_MAG_SQR_SHIFT / 2));
+    132                  gmag += temp * temp;
+    133              }
+    134          
+    135              return gmag;
+    136          }
+    137          
+    138          /** Performs a multiply and shift by 29. These are good functions to write in assembly on
+    139           * with devices with small memory where you want to get rid of the long long which some
+    140           * assemblers don't handle well
+    141           * @param[in] a
+    142           * @param[in] b
+    143           * @return ((long long)a*b)>>29
+    144          */
+    145          long inv_q29_mult(long a, long b)
+    146          {
+    147          #ifdef EMPL_NO_64BIT
+    148              long result;
+    149              result = (long)((float)a * b / (1L << 29));
+    150              return result;
+    151          #else
+    152              long long temp;
+    153              long result;
+    154              temp = (long long)a * b;
+    155              result = (long)(temp >> 29);
+    156              return result;
+    157          #endif
+    158          }
+    159          
+    160          /** Performs a multiply and shift by 30. These are good functions to write in assembly on
+    161           * with devices with small memory where you want to get rid of the long long which some
+    162           * assemblers don't handle well
+    163           * @param[in] a
+    164           * @param[in] b
+    165           * @return ((long long)a*b)>>30
+    166          */
+    167          long inv_q30_mult(long a, long b)
+    168          {
+    169          #ifdef EMPL_NO_64BIT
+    170              long result;
+    171              result = (long)((float)a * b / (1L << 30));
+    172              return result;
+    173          #else
+    174              long long temp;
+    175              long result;
+    176              temp = (long long)a * b;
+    177              result = (long)(temp >> 30);
+    178              return result;
+    179          #endif
+    180          }
+    181          
+    182          #ifndef EMPL_NO_64BIT
+    183          long inv_q30_div(long a, long b)
+    184          {
+    185              long long temp;
+    186              long result;
+    187              temp = (((long long)a) << 30) / b;
+    188              result = (long)temp;
+    189              return result;
+    190          }
+    191          #endif
+    192          
+    193          /** Performs a multiply and shift by shift. These are good functions to write
+    194           * in assembly on with devices with small memory where you want to get rid of
+    195           * the long long which some assemblers don't handle well
+    196           * @param[in] a First multicand
+    197           * @param[in] b Second multicand
+    198           * @param[in] shift Shift amount after multiplying
+    199           * @return ((long long)a*b)<<shift
+    200          */
+    201          #ifndef EMPL_NO_64BIT
+    202          long inv_q_shift_mult(long a, long b, int shift)
+    203          {
+    204              long result;
+    205              result = (long)(((long long)a * b) >> shift);
+    206              return result;
+    207          }
+    208          #endif
+    209          
+    210          /** Performs a fixed point quaternion multiply.
+    211          * @param[in] q1 First Quaternion Multicand, length 4. 1.0 scaled
+    212          *            to 2^30
+    213          * @param[in] q2 Second Quaternion Multicand, length 4. 1.0 scaled
+    214          *            to 2^30
+    215          * @param[out] qProd Product after quaternion multiply. Length 4.
+    216          *             1.0 scaled to 2^30.
+    217          */
+    218          void inv_q_mult(const long *q1, const long *q2, long *qProd)
+    219          {
+    220              INVENSENSE_FUNC_START;
+    221              qProd[0] = inv_q30_mult(q1[0], q2[0]) - inv_q30_mult(q1[1], q2[1]) -
+    222                         inv_q30_mult(q1[2], q2[2]) - inv_q30_mult(q1[3], q2[3]);
+    223          
+    224              qProd[1] = inv_q30_mult(q1[0], q2[1]) + inv_q30_mult(q1[1], q2[0]) +
+    225                         inv_q30_mult(q1[2], q2[3]) - inv_q30_mult(q1[3], q2[2]);
+    226          
+    227              qProd[2] = inv_q30_mult(q1[0], q2[2]) - inv_q30_mult(q1[1], q2[3]) +
+    228                         inv_q30_mult(q1[2], q2[0]) + inv_q30_mult(q1[3], q2[1]);
+    229          
+    230              qProd[3] = inv_q30_mult(q1[0], q2[3]) + inv_q30_mult(q1[1], q2[2]) -
+    231                         inv_q30_mult(q1[2], q2[1]) + inv_q30_mult(q1[3], q2[0]);
+    232          }
+    233          
+    234          /** Performs a fixed point quaternion addition.
+    235          * @param[in] q1 First Quaternion term, length 4. 1.0 scaled
+    236          *            to 2^30
+    237          * @param[in] q2 Second Quaternion term, length 4. 1.0 scaled
+    238          *            to 2^30
+    239          * @param[out] qSum Sum after quaternion summation. Length 4.
+    240          *             1.0 scaled to 2^30.
+    241          */
+    242          void inv_q_add(long *q1, long *q2, long *qSum)
+    243          {
+    244              INVENSENSE_FUNC_START;
+    245              qSum[0] = q1[0] + q2[0];
+    246              qSum[1] = q1[1] + q2[1];
+    247              qSum[2] = q1[2] + q2[2];
+    248              qSum[3] = q1[3] + q2[3];
+    249          }
+    250          
+    251          void inv_vector_normalize(long *vec, int length)
+    252          {
+    253              INVENSENSE_FUNC_START;
+    254              double normSF = 0;
+    255              int ii;
+    256              for (ii = 0; ii < length; ii++) {
+    257                  normSF +=
+    258                      inv_q30_to_double(vec[ii]) * inv_q30_to_double(vec[ii]);
+    259              }
+    260              if (normSF > 0) {
+    261                  normSF = 1 / sqrt(normSF);
+    262                  for (ii = 0; ii < length; ii++) {
+    263                      vec[ii] = (int)((double)vec[ii] * normSF);
+    264                  }
+    265              } else {
+    266                  vec[0] = 1073741824L;
+    267                  for (ii = 1; ii < length; ii++) {
+    268                      vec[ii] = 0;
+    269                  }
+    270              }
+    271          }
+    272          
+    273          void inv_q_normalize(long *q)
+    274          {
+    275              INVENSENSE_FUNC_START;
+    276              inv_vector_normalize(q, 4);
+    277          }
+    278          
+    279          void inv_q_invert(const long *q, long *qInverted)
+    280          {
+    281              INVENSENSE_FUNC_START;
+    282              qInverted[0] = q[0];
+    283              qInverted[1] = -q[1];
+    284              qInverted[2] = -q[2];
+    285              qInverted[3] = -q[3];
+    286          }
+    287          
+    288          double quaternion_to_rotation_angle(const long *quat) {
+    289              double quat0 = (double )quat[0] / 1073741824;
+    290              if (quat0 > 1.0f) {
+    291                  quat0 = 1.0;
+    292              } else if (quat0 < -1.0f) {
+    293                  quat0 = -1.0;
+    294              }
+    295          
+    296              return acos(quat0)*2*180/M_PI;
+    297          }
+    298          
+    299          /** Rotates a 3-element vector by Rotation defined by Q
+    300          */
+    301          void inv_q_rotate(const long *q, const long *in, long *out)
+    302          {
+    303              long q_temp1[4], q_temp2[4];
+    304              long in4[4], out4[4];
+    305          
+    306              // Fixme optimize
+    307              in4[0] = 0;
+    308              memcpy(&in4[1], in, 3 * sizeof(long));
+    309              inv_q_mult(q, in4, q_temp1);
+    310              inv_q_invert(q, q_temp2);
+    311              inv_q_mult(q_temp1, q_temp2, out4);
+    312              memcpy(out, &out4[1], 3 * sizeof(long));
+    313          }
+    314          
+    315          void inv_q_multf(const float *q1, const float *q2, float *qProd)
+    316          {
+    317              INVENSENSE_FUNC_START;
+    318              qProd[0] =
+    319                  (q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3]);
+    320              qProd[1] =
+    321                  (q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2]);
+    322              qProd[2] =
+    323                  (q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1]);
+    324              qProd[3] =
+    325                  (q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0]);
+    326          }
+    327          
+    328          void inv_q_addf(const float *q1, const float *q2, float *qSum)
+    329          {
+    330              INVENSENSE_FUNC_START;
+    331              qSum[0] = q1[0] + q2[0];
+    332              qSum[1] = q1[1] + q2[1];
+    333              qSum[2] = q1[2] + q2[2];
+    334              qSum[3] = q1[3] + q2[3];
+    335          }
+    336          
+    337          void inv_q_normalizef(float *q)
+    338          {
+    339              INVENSENSE_FUNC_START;
+    340              float normSF = 0;
+    341              float xHalf = 0;
+    342              normSF = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    343              if (normSF < 2) {
+    344                  xHalf = 0.5f * normSF;
+    345                  normSF = normSF * (1.5f - xHalf * normSF * normSF);
+    346                  normSF = normSF * (1.5f - xHalf * normSF * normSF);
+    347                  normSF = normSF * (1.5f - xHalf * normSF * normSF);
+    348                  normSF = normSF * (1.5f - xHalf * normSF * normSF);
+    349                  q[0] *= normSF;
+    350                  q[1] *= normSF;
+    351                  q[2] *= normSF;
+    352                  q[3] *= normSF;
+    353              } else {
+    354                  q[0] = 1.0;
+    355                  q[1] = 0.0;
+    356                  q[2] = 0.0;
+    357                  q[3] = 0.0;
+    358              }
+    359              normSF = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    360          }
+    361          
+    362          /** Performs a length 4 vector normalization with a square root.
+    363          * @param[in,out] q vector to normalize. Returns [1,0,0,0] is magnitude is zero.
+    364          */
+    365          void inv_q_norm4(float *q)
+    366          {
+    367              float mag;
+    368              mag = sqrtf(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    369              if (mag) {
+    370                  q[0] /= mag;
+    371                  q[1] /= mag;
+    372                  q[2] /= mag;
+    373                  q[3] /= mag;
+    374              } else {
+    375                  q[0] = 1.f;
+    376                  q[1] = 0.f;
+    377                  q[2] = 0.f;
+    378                  q[3] = 0.f;
+    379              }
+    380          }
+    381          
+    382          void inv_q_invertf(const float *q, float *qInverted)
+    383          {
+    384              INVENSENSE_FUNC_START;
+    385              qInverted[0] = q[0];
+    386              qInverted[1] = -q[1];
+    387              qInverted[2] = -q[2];
+    388              qInverted[3] = -q[3];
+    389          }
+    390          
+    391          /**
+    392           * Converts a quaternion to a rotation matrix.
+    393           * @param[in] quat 4-element quaternion in fixed point. One is 2^30.
+    394           * @param[out] rot Rotation matrix in fixed point. One is 2^30. The
+    395           *             First 3 elements of the rotation matrix, represent
+    396           *             the first row of the matrix. Rotation matrix multiplied
+    397           *             by a 3 element column vector transform a vector from Body
+    398           *             to World.
+    399           */
+    400          void inv_quaternion_to_rotation(const long *quat, long *rot)
+    401          {
+    402              rot[0] =
+    403                  inv_q29_mult(quat[1], quat[1]) + inv_q29_mult(quat[0],
+    404                          quat[0]) -
+    405                  1073741824L;
+    406              rot[1] =
+    407                  inv_q29_mult(quat[1], quat[2]) - inv_q29_mult(quat[3], quat[0]);
+    408              rot[2] =
+    409                  inv_q29_mult(quat[1], quat[3]) + inv_q29_mult(quat[2], quat[0]);
+    410              rot[3] =
+    411                  inv_q29_mult(quat[1], quat[2]) + inv_q29_mult(quat[3], quat[0]);
+    412              rot[4] =
+    413                  inv_q29_mult(quat[2], quat[2]) + inv_q29_mult(quat[0],
+    414                          quat[0]) -
+    415                  1073741824L;
+    416              rot[5] =
+    417                  inv_q29_mult(quat[2], quat[3]) - inv_q29_mult(quat[1], quat[0]);
+    418              rot[6] =
+    419                  inv_q29_mult(quat[1], quat[3]) - inv_q29_mult(quat[2], quat[0]);
+    420              rot[7] =
+    421                  inv_q29_mult(quat[2], quat[3]) + inv_q29_mult(quat[1], quat[0]);
+    422              rot[8] =
+    423                  inv_q29_mult(quat[3], quat[3]) + inv_q29_mult(quat[0],
+    424                          quat[0]) -
+    425                  1073741824L;
+    426          }
+    427          
+    428          /**
+    429           * Converts a quaternion to a rotation vector. A rotation vector is
+    430           * a method to represent a 4-element quaternion vector in 3-elements.
+    431           * To get the quaternion from the 3-elements, The last 3-elements of
+    432           * the quaternion will be the given rotation vector. The first element
+    433           * of the quaternion will be the positive value that will be required
+    434           * to make the magnitude of the quaternion 1.0 or 2^30 in fixed point units.
+    435           * @param[in] quat 4-element quaternion in fixed point. One is 2^30.
+    436           * @param[out] rot Rotation vector in fixed point. One is 2^30.
+    437           */
+    438          void inv_quaternion_to_rotation_vector(const long *quat, long *rot)
+    439          {
+    440              rot[0] = quat[1];
+    441              rot[1] = quat[2];
+    442              rot[2] = quat[3];
+    443          
+    444              if (quat[0] < 0.0) {
+    445                  rot[0] = -rot[0];
+    446                  rot[1] = -rot[1];
+    447                  rot[2] = -rot[2];
+    448              }
+    449          }
+    450          
+    451          /** Converts a 32-bit long to a big endian byte stream */
+    452          unsigned char *inv_int32_to_big8(long x, unsigned char *big8)
+    453          {
+    454              big8[0] = (unsigned char)((x >> 24) & 0xff);
+    455              big8[1] = (unsigned char)((x >> 16) & 0xff);
+    456              big8[2] = (unsigned char)((x >> 8) & 0xff);
+    457              big8[3] = (unsigned char)(x & 0xff);
+    458              return big8;
+    459          }
+    460          
+    461          /** Converts a big endian byte stream into a 32-bit long */
+    462          long inv_big8_to_int32(const unsigned char *big8)
+    463          {
+    464              long x;
+    465              x = ((long)big8[0] << 24) | ((long)big8[1] << 16) | ((long)big8[2] << 8)
+    466                  | ((long)big8[3]);
+    467              return x;
+    468          }
+    469          
+    470          /** Converts a big endian byte stream into a 16-bit integer (short) */
+    471          short inv_big8_to_int16(const unsigned char *big8)
+    472          {
+    473              short x;
+    474              x = ((short)big8[0] << 8) | ((short)big8[1]);
+    475              return x;
+    476          }
+    477          
+    478          /** Converts a little endian byte stream into a 16-bit integer (short) */
+    479          short inv_little8_to_int16(const unsigned char *little8)
+    480          {
+    481              short x;
+    482              x = ((short)little8[1] << 8) | ((short)little8[0]);
+    483              return x;
+    484          }
+    485          
+    486          /** Converts a 16-bit short to a big endian byte stream */
+    487          unsigned char *inv_int16_to_big8(short x, unsigned char *big8)
+    488          {
+    489              big8[0] = (unsigned char)((x >> 8) & 0xff);
+    490              big8[1] = (unsigned char)(x & 0xff);
+    491              return big8;
+    492          }
+    493          
+    494          void inv_matrix_det_inc(float *a, float *b, int *n, int x, int y)
+    495          {
+    496              int k, l, i, j;
+    497              for (i = 0, k = 0; i < *n; i++, k++) {
+    498                  for (j = 0, l = 0; j < *n; j++, l++) {
+    499                      if (i == x)
+    500                          i++;
+    501                      if (j == y)
+    502                          j++;
+    503                      *(b + 6 * k + l) = *(a + 6 * i + j);
+    504                  }
+    505              }
+    506              *n = *n - 1;
+    507          }
+    508          
+    509          void inv_matrix_det_incd(double *a, double *b, int *n, int x, int y)
+    510          {
+    511              int k, l, i, j;
+    512              for (i = 0, k = 0; i < *n; i++, k++) {
+    513                  for (j = 0, l = 0; j < *n; j++, l++) {
+    514                      if (i == x)
+    515                          i++;
+    516                      if (j == y)
+    517                          j++;
+    518                      *(b + 6 * k + l) = *(a + 6 * i + j);
+    519                  }
+    520              }
+    521              *n = *n - 1;
+    522          }
+    523          
+    524          float inv_matrix_det(float *p, int *n)
+    525          {
+    526              float d[6][6], sum = 0;
+    527              int i, j, m;
+    528              m = *n;
+    529              if (*n == 2)
+    530                  return (*p ** (p + 7) - *(p + 1) ** (p + 6));
+    531              for (i = 0, j = 0; j < m; j++) {
+    532                  *n = m;
+    533                  inv_matrix_det_inc(p, &d[0][0], n, i, j);
+    534                  sum =
+    535                      sum + *(p + 6 * i + j) * SIGNM(i +
+    536                                                      j) *
+    537                      inv_matrix_det(&d[0][0], n);
+    538              }
+    539          
+    540              return (sum);
+    541          }
+    542          
+    543          double inv_matrix_detd(double *p, int *n)
+    544          {
+    545              double d[6][6], sum = 0;
+    546              int i, j, m;
+    547              m = *n;
+    548              if (*n == 2)
+    549                  return (*p ** (p + 7) - *(p + 1) ** (p + 6));
+    550              for (i = 0, j = 0; j < m; j++) {
+    551                  *n = m;
+    552                  inv_matrix_det_incd(p, &d[0][0], n, i, j);
+    553                  sum =
+    554                      sum + *(p + 6 * i + j) * SIGNM(i +
+    555                                                      j) *
+    556                      inv_matrix_detd(&d[0][0], n);
+    557              }
+    558          
+    559              return (sum);
+    560          }
+    561          
+    562          /** Wraps angle from (-M_PI,M_PI]
+    563           * @param[in] ang Angle in radians to wrap
+    564           * @return Wrapped angle from (-M_PI,M_PI]
+    565           */
+    566          float inv_wrap_angle(float ang)
+    567          {
+    568              if (ang > M_PI)
+    569                  return ang - 2 * (float)M_PI;
+    570              else if (ang <= -(float)M_PI)
+    571                  return ang + 2 * (float)M_PI;
+    572              else
+    573                  return ang;
+    574          }
+    575          
+    576          /** Finds the minimum angle difference ang1-ang2 such that difference
+    577           * is between [-M_PI,M_PI]
+    578           * @param[in] ang1
+    579           * @param[in] ang2
+    580           * @return angle difference ang1-ang2
+    581           */
+    582          float inv_angle_diff(float ang1, float ang2)
+    583          {
+    584              float d;
+    585              ang1 = inv_wrap_angle(ang1);
+    586              ang2 = inv_wrap_angle(ang2);
+    587              d = ang1 - ang2;
+    588              if (d > M_PI)
+    589                  d -= 2 * (float)M_PI;
+    590              else if (d < -(float)M_PI)
+    591                  d += 2 * (float)M_PI;
+    592              return d;
+    593          }
+    594          
+    595          /** bernstein hash, derived from public domain source */
+    596          uint32_t inv_checksum(const unsigned char *str, int len)
+    597          {
+    598              uint32_t hash = 5381;
+    599              int i, c;
+    600          
+    601              for (i = 0; i < len; i++) {
+    602                  c = *(str + i);
+    603                  hash = ((hash << 5) + hash) + c;	/* hash * 33 + c */
+    604              }
+    605          
+    606              return hash;
+    607          }
+    608          
+    609          static unsigned short inv_row_2_scale(const signed char *row)
+    610          {
+    611              unsigned short b;
+    612          
+    613              if (row[0] > 0)
+    614                  b = 0;
+    615              else if (row[0] < 0)
+    616                  b = 4;
+    617              else if (row[1] > 0)
+    618                  b = 1;
+    619              else if (row[1] < 0)
+    620                  b = 5;
+    621              else if (row[2] > 0)
+    622                  b = 2;
+    623              else if (row[2] < 0)
+    624                  b = 6;
+    625              else
+    626                  b = 7;		// error
+    627              return b;
+    628          }
+    629          
+    630          
+    631          /** Converts an orientation matrix made up of 0,+1,and -1 to a scalar representation.
+    632          * @param[in] mtx Orientation matrix to convert to a scalar.
+    633          * @return Description of orientation matrix. The lowest 2 bits (0 and 1) represent the column the one is on for the
+    634          * first row, with the bit number 2 being the sign. The next 2 bits (3 and 4) represent
+    635          * the column the one is on for the second row with bit number 5 being the sign.
+    636          * The next 2 bits (6 and 7) represent the column the one is on for the third row with
+    637          * bit number 8 being the sign. In binary the identity matrix would therefor be:
+    638          * 010_001_000 or 0x88 in hex.
+    639          */
+    640          unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
+    641          {
+    642          
+    643              unsigned short scalar;
+    644          
+    645              /*
+    646                 XYZ  010_001_000 Identity Matrix
+    647                 XZY  001_010_000
+    648                 YXZ  010_000_001
+    649                 YZX  000_010_001
+    650                 ZXY  001_000_010
+    651                 ZYX  000_001_010
+    652               */
+    653          
+    654              scalar = inv_row_2_scale(mtx);
+    655              scalar |= inv_row_2_scale(mtx + 3) << 3;
+    656              scalar |= inv_row_2_scale(mtx + 6) << 6;
+    657          
+    658          
+    659              return scalar;
+    660          }
+    661          
+    662          /** Uses the scalar orientation value to convert from chip frame to body frame
+    663          * @param[in] orientation A scalar that represent how to go from chip to body frame
+    664          * @param[in] input Input vector, length 3
+    665          * @param[out] output Output vector, length 3
+    666          */
+    667          void inv_convert_to_body(unsigned short orientation, const long *input, long *output)
+    668          {
+    669              output[0] = input[orientation      & 0x03] * SIGNSET(orientation & 0x004);
+    670              output[1] = input[(orientation>>3) & 0x03] * SIGNSET(orientation & 0x020);
+    671              output[2] = input[(orientation>>6) & 0x03] * SIGNSET(orientation & 0x100);
+    672          }
+    673          
+    674          /** Uses the scalar orientation value to convert from body frame to chip frame
+    675          * @param[in] orientation A scalar that represent how to go from chip to body frame
+    676          * @param[in] input Input vector, length 3
+    677          * @param[out] output Output vector, length 3
+    678          */
+    679          void inv_convert_to_chip(unsigned short orientation, const long *input, long *output)
+    680          {
+    681              output[orientation & 0x03]      = input[0] * SIGNSET(orientation & 0x004);
+    682              output[(orientation>>3) & 0x03] = input[1] * SIGNSET(orientation & 0x020);
+    683              output[(orientation>>6) & 0x03] = input[2] * SIGNSET(orientation & 0x100);
+    684          }
+    685          
+    686          
+    687          /** Uses the scalar orientation value to convert from chip frame to body frame and
+    688          * apply appropriate scaling.
+    689          * @param[in] orientation A scalar that represent how to go from chip to body frame
+    690          * @param[in] sensitivity Sensitivity scale
+    691          * @param[in] input Input vector, length 3
+    692          * @param[out] output Output vector, length 3
+    693          */
+    694          void inv_convert_to_body_with_scale(unsigned short orientation, long sensitivity, const long *input, long *output)
+    695          {
+    696              output[0] = inv_q30_mult(input[orientation & 0x03] *
+    697                                       SIGNSET(orientation & 0x004), sensitivity);
+    698              output[1] = inv_q30_mult(input[(orientation>>3) & 0x03] *
+    699                                       SIGNSET(orientation & 0x020), sensitivity);
+    700              output[2] = inv_q30_mult(input[(orientation>>6) & 0x03] *
+    701                                       SIGNSET(orientation & 0x100), sensitivity);
+    702          }
+    703          
+    704          /** find a norm for a vector
+    705          * @param[in] a vector [3x1]
+    706          * @param[out] output the norm of the input vector
+    707          */
+    708          double inv_vector_norm(const float *x)
+    709          {
+    710              return sqrt(x[0]*x[0]+x[1]*x[1]+x[2]*x[2]);
+    711          }
+    712          
+    713          void inv_init_biquad_filter(inv_biquad_filter_t *pFilter, float *pBiquadCoeff) {
+    714              int i;
+    715              // initial state to zero
+    716              pFilter->state[0] = 0;
+    717              pFilter->state[1] = 0;
+    718          
+    719              // set up coefficients
+    720              for (i=0; i<5; i++) {
+    721                  pFilter->c[i] = pBiquadCoeff[i];
+    722              }
+    723          }
+    724          
+    725          void inv_calc_state_to_match_output(inv_biquad_filter_t *pFilter, float input)
+    726          {
+    727              pFilter->input = input;
+    728              pFilter->output = input;
+    729              pFilter->state[0] = input / (1 + pFilter->c[2] + pFilter->c[3]);
+    730              pFilter->state[1] = pFilter->state[0];
+    731          }
+    732          
+    733          float inv_biquad_filter_process(inv_biquad_filter_t *pFilter, float input)  {
+    734              float stateZero;
+    735          
+    736              pFilter->input = input;
+    737              // calculate the new state;
+    738              stateZero = pFilter->input - pFilter->c[2]*pFilter->state[0]
+    739                                         - pFilter->c[3]*pFilter->state[1];
+    740          
+    741              pFilter->output = stateZero + pFilter->c[0]*pFilter->state[0]
+    742                                          + pFilter->c[1]*pFilter->state[1];
+    743          
+    744              // update the output and state
+    745              pFilter->output = pFilter->output * pFilter->c[4];
+    746              pFilter->state[1] = pFilter->state[0];
+    747              pFilter->state[0] = stateZero;
+    748              return pFilter->output;
+    749          }
+    750          
+    751          void inv_get_cross_product_vec(float *cgcross, float compass[3], float grav[3])  {
+    752          
+    753              cgcross[0] = (float)compass[1] * grav[2] - (float)compass[2] * grav[1];
+    754              cgcross[1] = (float)compass[2] * grav[0] - (float)compass[0] * grav[2];
+    755              cgcross[2] = (float)compass[0] * grav[1] - (float)compass[1] * grav[0];
+    756          }
+    757          
+    758          void mlMatrixVectorMult(long matrix[9], const long vecIn[3], long *vecOut)  {
+    759                  // matrix format
+    760                  //  [ 0  3  6;
+    761                  //    1  4  7;
+    762                  //    2  5  8]
+    763          
+    764                  // vector format:  [0  1  2]^T;
+    765                  int i, j;
+    766                  long temp;
+    767          
+    768                  for (i=0; i<3; i++)	{
+    769                          temp = 0;
+    770                          for (j=0; j<3; j++)  {
+    771                                  temp += inv_q30_mult(matrix[i+j*3], vecIn[j]);
+    772                          }
+    773                          vecOut[i] = temp;
+    774                  }
+    775          }
+    776          
+    777          
+    778          /**
+    779           * @}
+    780           */
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      16   inv_angle_diff
+        16   -> inv_wrap_angle
+       0   inv_big8_to_int16
+       0   inv_big8_to_int32
+       0   inv_biquad_filter_process
+       0   inv_calc_state_to_match_output
+       4   inv_checksum
+      96   inv_compass_angle
+        96   -> atan2f
+        96   -> inv_q30_mult
+        96   -> inv_q30_to_float
+        96   -> inv_q_invert
+        96   -> inv_q_mult
+       4   inv_convert_to_body
+      24   inv_convert_to_body_with_scale
+        24   -> inv_q30_mult
+       8   inv_convert_to_chip
+       0   inv_cosf
+       0   inv_get_cross_product_vec
+       0   inv_get_gyro_sum_of_sqr
+       4   inv_init_biquad_filter
+       0   inv_int16_to_big8
+       0   inv_int32_to_big8
+       0   inv_little8_to_int16
+     184   inv_matrix_det
+       184   -> inv_matrix_det
+       184   -> inv_matrix_det_inc
+      24   inv_matrix_det_inc
+      24   inv_matrix_det_incd
+     344   inv_matrix_detd
+       344   -> __aeabi_dadd
+       344   -> __aeabi_dmul
+       344   -> __aeabi_dsub
+       344   -> __aeabi_i2d
+       344   -> inv_matrix_det_incd
+       344   -> inv_matrix_detd
+      16   inv_orientation_matrix_to_scalar
+        16   -> inv_row_2_scale
+       0   inv_q29_mult
+       4   inv_q30_div
+         4 __aeabi_ldivmod
+       0   inv_q30_mult
+       8   inv_q30_to_double
+         8   -> __aeabi_ddiv
+         8   -> __aeabi_i2d
+       0   inv_q30_to_float
+       4   inv_q_add
+       0   inv_q_addf
+       0   inv_q_invert
+       0   inv_q_invertf
+      24   inv_q_mult
+        24   -> inv_q30_mult
+       0   inv_q_multf
+       8   inv_q_norm4
+         8   -> sqrtf
+       8   inv_q_normalize
+         8   -> inv_vector_normalize
+       0   inv_q_normalizef
+      80   inv_q_rotate
+        80   -> __aeabi_memcpy
+        80   -> inv_q_invert
+        80   -> inv_q_mult
+       4   inv_q_shift_mult
+         4 __aeabi_lasr
+      16   inv_quaternion_to_rotation
+        16   -> inv_q29_mult
+       0   inv_quaternion_to_rotation_vector
+       0   inv_row_2_scale
+       0   inv_sinf
+       8   inv_vector_norm
+         8   -> __aeabi_f2d
+         8   -> sqrt
+      32   inv_vector_normalize
+        32   -> __aeabi_d2iz
+        32   -> __aeabi_dadd
+        32   -> __aeabi_ddiv
+        32   -> __aeabi_dmul
+        32   -> __aeabi_i2d
+        32   -> inv_q30_to_double
+        32   -> sqrt
+        32 __aeabi_cdrcmple
+       0   inv_wrap_angle
+      32   mlMatrixVectorMult
+        32   -> inv_q30_mult
+      16   quaternion_to_rotation_angle
+        16   -> __aeabi_ddiv
+        16   -> __aeabi_dmul
+        16   -> __aeabi_i2d
+        16   -> acos
+        16 __aeabi_cdcmple
+        16 __aeabi_cdrcmple
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable11
+       4  ??DataTable11_1
+       4  ??DataTable11_10
+       4  ??DataTable11_11
+       4  ??DataTable11_12
+       4  ??DataTable11_13
+       8  ??DataTable11_14
+       4  ??DataTable11_15
+       4  ??DataTable11_2
+       4  ??DataTable11_3
+       4  ??DataTable11_4
+       4  ??DataTable11_5
+       4  ??DataTable11_6
+       4  ??DataTable11_7
+       4  ??DataTable11_8
+       4  ??DataTable11_9
+       4  ??DataTable5
+       4  ??DataTable5_1
+       4  ??DataTable5_2
+       8  ??DataTable6
+       4  ??DataTable6_1
+       8  ??DataTable7
+       8  ??DataTable7_1
+       4  ??DataTable7_2
+      94  inv_angle_diff
+      12  inv_big8_to_int16
+      22  inv_big8_to_int32
+      94  inv_biquad_filter_process
+      42  inv_calc_state_to_match_output
+      30  inv_checksum
+     166  inv_compass_angle
+      88  inv_convert_to_body
+     114  inv_convert_to_body_with_scale
+      88  inv_convert_to_chip
+      54  inv_cosf
+      86  inv_get_cross_product_vec
+      26  inv_get_gyro_sum_of_sqr
+      34  inv_init_biquad_filter
+      12  inv_int16_to_big8
+      18  inv_int32_to_big8
+      12  inv_little8_to_int16
+     152  inv_matrix_det
+      90  inv_matrix_det_inc
+     100  inv_matrix_det_incd
+     198  inv_matrix_detd
+      38  inv_orientation_matrix_to_scalar
+      14  inv_q29_mult
+      22  inv_q30_div
+      14  inv_q30_mult
+      22  inv_q30_to_double
+      18  inv_q30_to_float
+      38  inv_q_add
+      66  inv_q_addf
+      24  inv_q_invert
+      42  inv_q_invertf
+     198  inv_q_mult
+     210  inv_q_multf
+     136  inv_q_norm4
+      10  inv_q_normalize
+     260  inv_q_normalizef
+      64  inv_q_rotate
+      12  inv_q_shift_mult
+     218  inv_quaternion_to_rotation
+      38  inv_quaternion_to_rotation_vector
+      78  inv_row_2_scale
+      50  inv_sinf
+      56  inv_vector_norm
+     178  inv_vector_normalize
+      50  inv_wrap_angle
+      70  mlMatrixVectorMult
+     126  quaternion_to_rotation_angle
+    1024  sin_lookup
+
+ 
+ 1 024 bytes in section .rodata
+ 3 696 bytes in section .text
+ 
+ 3 696 bytes of CODE  memory
+ 1 024 bytes of CONST memory
+
+Errors: none
+Warnings: none

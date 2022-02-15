@@ -1,0 +1,1555 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:21
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\data_builder.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\data_builder.c -D
+#        USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D MPU9250
+#        -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\data_builder.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\data_builder.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\data_builder.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7           
+      8          /**
+      9           *   @defgroup  Data_Builder data_builder
+     10           *   @brief     Motion Library - Data Builder
+     11           *              Constructs and Creates the data for MPL
+     12           *
+     13           *   @{
+     14           *       @file data_builder.c
+     15           *       @brief Data Builder.
+     16           */
+     17          
+     18          #undef MPL_LOG_NDEBUG
+     19          #define MPL_LOG_NDEBUG 0 /* Use 0 to turn on MPL_LOGV output */
+     20          
+     21          #include <string.h>
+     22          
+     23          #include "ml_math_func.h"
+     24          #include "data_builder.h"
+     25          #include "mlmath.h"
+     26          #include "storage_manager.h"
+     27          #include "message_layer.h"
+     28          #include "results_holder.h"
+     29          
+     30          #include "log.h"
+     31          #undef MPL_LOG_TAG
+     32          #define MPL_LOG_TAG "MPL"
+     33          
+     34          typedef inv_error_t (*inv_process_cb_func)(struct inv_sensor_cal_t *data);
+     35          
+     36          struct process_t {
+     37              inv_process_cb_func func;
+     38              int priority;
+     39              int data_required;
+     40          };
+     41          
+     42          struct inv_db_save_t {
+     43              /** Compass Bias in Chip Frame in Hardware units scaled by 2^16 */
+     44              long compass_bias[3];
+     45              /** Gyro Bias in Chip Frame in Hardware units scaled by 2^16 */
+     46              long gyro_bias[3];
+     47              /** Temperature when *gyro_bias was stored. */
+     48              long gyro_temp;
+     49              /** Flag to indicate temperature compensation that biases where stored. */
+     50              int gyro_bias_tc_set;
+     51              /** Accel Bias in Chip Frame in Hardware units scaled by 2^16 */
+     52              long accel_bias[3];
+     53              /** Temperature when accel bias was stored. */
+     54              long accel_temp;
+     55              long gyro_temp_slope[3];
+     56              /** Sensor Accuracy */
+     57              int gyro_accuracy;
+     58              int accel_accuracy;
+     59              int compass_accuracy;
+     60          };
+     61          
+     62          struct inv_data_builder_t {
+     63              int num_cb;
+     64              struct process_t process[INV_MAX_DATA_CB];
+     65              struct inv_db_save_t save;
+     66              int compass_disturbance;
+     67          #ifdef INV_PLAYBACK_DBG
+     68              int debug_mode;
+     69              int last_mode;
+     70              FILE *file;
+     71          #endif
+     72          };
+     73          
+     74          void inv_apply_calibration(struct inv_single_sensor_t *sensor, const long *bias);
+     75          static void inv_set_contiguous(void);
+     76          
+     77          static struct inv_data_builder_t inv_data_builder;
+     78          static struct inv_sensor_cal_t sensors;
+     79          
+     80          /** Change this key if the data being stored by this file changes */
+     81          #define INV_DB_SAVE_KEY 53395
+     82          
+     83          #ifdef INV_PLAYBACK_DBG
+     84          
+     85          /** Turn on data logging to allow playback of same scenario at a later time.
+     86          * @param[in] file File to write to, must be open.
+     87          */
+     88          void inv_turn_on_data_logging(FILE *file)
+     89          {
+     90              MPL_LOGV("input data logging started\n");
+     91              inv_data_builder.file = file;
+     92              inv_data_builder.debug_mode = RD_RECORD;
+     93          }
+     94          
+     95          /** Turn off data logging to allow playback of same scenario at a later time.
+     96          * File passed to inv_turn_on_data_logging() must be closed after calling this.
+     97          */
+     98          void inv_turn_off_data_logging()
+     99          {
+    100              MPL_LOGV("input data logging stopped\n");
+    101              inv_data_builder.debug_mode = RD_NO_DEBUG;
+    102              inv_data_builder.file = NULL;
+    103          }
+    104          #endif
+    105          
+    106          /** This function receives the data that was stored in non-volatile memory between power off */
+    107          static inv_error_t inv_db_load_func(const unsigned char *data)
+    108          {
+    109              memcpy(&inv_data_builder.save, data, sizeof(inv_data_builder.save));
+    110              // copy in the saved accuracy in the actual sensors accuracy
+    111              sensors.gyro.accuracy = inv_data_builder.save.gyro_accuracy;
+    112              sensors.accel.accuracy = inv_data_builder.save.accel_accuracy;
+    113              sensors.compass.accuracy = inv_data_builder.save.compass_accuracy;
+    114              // TODO
+    115              if (sensors.compass.accuracy == 3) {
+    116                  inv_set_compass_bias_found(1);
+    117              }
+    118              return INV_SUCCESS;
+    119          }
+    120          
+    121          /** This function returns the data to be stored in non-volatile memory between power off */
+    122          static inv_error_t inv_db_save_func(unsigned char *data)
+    123          {
+    124              memcpy(data, &inv_data_builder.save, sizeof(inv_data_builder.save));
+    125              return INV_SUCCESS;
+    126          }
+    127          
+    128          /** Initialize the data builder
+    129          */
+    130          inv_error_t inv_init_data_builder(void)
+    131          {
+    132              /* TODO: Hardcode temperature scale/offset here. */
+    133              memset(&inv_data_builder, 0, sizeof(inv_data_builder));
+    134              memset(&sensors, 0, sizeof(sensors));
+    135          
+    136              // disable the soft iron transform process
+    137              inv_reset_compass_soft_iron_matrix();
+    138          
+    139              return inv_register_load_store(inv_db_load_func, inv_db_save_func,
+    140                                             sizeof(inv_data_builder.save),
+    141                                             INV_DB_SAVE_KEY);
+    142          }
+    143          
+    144          /** Gyro sensitivity.
+    145          * @return A scale factor to convert device units to degrees per second scaled by 2^16
+    146          * such that degrees_per_second  = device_units * sensitivity / 2^30. Typically
+    147          * it works out to be the maximum rate * 2^15.
+    148          */
+    149          long inv_get_gyro_sensitivity()
+    150          {
+    151              return sensors.gyro.sensitivity;
+    152          }
+    153          
+    154          /** Accel sensitivity.
+    155          * @return A scale factor to convert device units to g's scaled by 2^16
+    156          * such that g_s  = device_units * sensitivity / 2^30. Typically
+    157          * it works out to be the maximum accel value in g's * 2^15.
+    158          */
+    159          long inv_get_accel_sensitivity(void)
+    160          {
+    161              return sensors.accel.sensitivity;
+    162          }
+    163          
+    164          /** Compass sensitivity.
+    165          * @return A scale factor to convert device units to micro Tesla scaled by 2^16
+    166          * such that uT  = device_units * sensitivity / 2^30. Typically
+    167          * it works out to be the maximum uT * 2^15.
+    168          */
+    169          long inv_get_compass_sensitivity(void)
+    170          {
+    171              return sensors.compass.sensitivity;
+    172          }
+    173          
+    174          /** Sets orientation and sensitivity field for a sensor.
+    175          * @param[out] sensor Structure to apply settings to
+    176          * @param[in] orientation Orientation description of how part is mounted.
+    177          * @param[in] sensitivity A Scale factor to convert from hardware units to
+    178          *            standard units (dps, uT, g).
+    179          */
+    180          void set_sensor_orientation_and_scale(struct inv_single_sensor_t *sensor,
+    181                                           int orientation, long sensitivity)
+    182          {
+    183              sensor->sensitivity = sensitivity;
+    184              sensor->orientation = orientation;
+    185          }
+    186          
+    187          /** Sets the Orientation and Sensitivity of the gyro data.
+    188          * @param[in] orientation A scalar defining the transformation from chip mounting
+    189          *            to the body frame. The function inv_orientation_matrix_to_scalar()
+    190          *            can convert the transformation matrix to this scalar and describes the
+    191          *            scalar in further detail.
+    192          * @param[in] sensitivity A scale factor to convert device units to degrees per second scaled by 2^16
+    193          *            such that degrees_per_second  = device_units * sensitivity / 2^30. Typically
+    194          *            it works out to be the maximum rate * 2^15.
+    195          */
+    196          void inv_set_gyro_orientation_and_scale(int orientation, long sensitivity)
+    197          {
+    198          #ifdef INV_PLAYBACK_DBG
+    199              if (inv_data_builder.debug_mode == RD_RECORD) {
+    200                  int type = PLAYBACK_DBG_TYPE_G_ORIENT;
+    201                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    202                  fwrite(&orientation, sizeof(orientation), 1, inv_data_builder.file);
+    203                  fwrite(&sensitivity, sizeof(sensitivity), 1, inv_data_builder.file);
+    204              }
+    205          #endif
+    206              set_sensor_orientation_and_scale(&sensors.gyro, orientation,
+    207                                               sensitivity);
+    208          }
+    209          
+    210          /** Set Gyro Sample rate in micro seconds.
+    211          * @param[in] sample_rate_us Set Gyro Sample rate in us
+    212          */
+    213          void inv_set_gyro_sample_rate(long sample_rate_us)
+    214          {
+    215          #ifdef INV_PLAYBACK_DBG
+    216              if (inv_data_builder.debug_mode == RD_RECORD) {
+    217                  int type = PLAYBACK_DBG_TYPE_G_SAMPLE_RATE;
+    218                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    219                  fwrite(&sample_rate_us, sizeof(sample_rate_us), 1, inv_data_builder.file);
+    220              }
+    221          #endif
+    222              sensors.gyro.sample_rate_us = sample_rate_us;
+    223              sensors.gyro.sample_rate_ms = sample_rate_us / 1000;
+    224              if (sensors.gyro.bandwidth == 0) {
+    225                  sensors.gyro.bandwidth = (int)(1000000L / sample_rate_us);
+    226              }
+    227          }
+    228          
+    229          /** Set Accel Sample rate in micro seconds.
+    230          * @param[in] sample_rate_us Set Accel Sample rate in us
+    231          */
+    232          void inv_set_accel_sample_rate(long sample_rate_us)
+    233          {
+    234          #ifdef INV_PLAYBACK_DBG
+    235              if (inv_data_builder.debug_mode == RD_RECORD) {
+    236                  int type = PLAYBACK_DBG_TYPE_A_SAMPLE_RATE;
+    237                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    238                  fwrite(&sample_rate_us, sizeof(sample_rate_us), 1, inv_data_builder.file);
+    239              }
+    240          #endif
+    241              sensors.accel.sample_rate_us = sample_rate_us;
+    242              sensors.accel.sample_rate_ms = sample_rate_us / 1000;
+    243              if (sensors.accel.bandwidth == 0) {
+    244                  sensors.accel.bandwidth = (int)(1000000L / sample_rate_us);
+    245              }
+    246          }
+    247          
+    248          /** Set Compass Sample rate in micro seconds.
+    249          * @param[in] sample_rate_us Set Gyro Sample rate in micro seconds.
+    250          */
+    251          void inv_set_compass_sample_rate(long sample_rate_us)
+    252          {
+    253          #ifdef INV_PLAYBACK_DBG
+    254              if (inv_data_builder.debug_mode == RD_RECORD) {
+    255                  int type = PLAYBACK_DBG_TYPE_C_SAMPLE_RATE;
+    256                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    257                  fwrite(&sample_rate_us, sizeof(sample_rate_us), 1, inv_data_builder.file);
+    258              }
+    259          #endif
+    260              sensors.compass.sample_rate_us = sample_rate_us;
+    261              sensors.compass.sample_rate_ms = sample_rate_us / 1000;
+    262              if (sensors.compass.bandwidth == 0) {
+    263                  sensors.compass.bandwidth = (int)(1000000L / sample_rate_us);
+    264              }
+    265          }
+    266          
+    267          void inv_get_gyro_sample_rate_ms(long *sample_rate_ms)
+    268          {
+    269          	*sample_rate_ms = sensors.gyro.sample_rate_ms;
+    270          }
+    271          
+    272          void inv_get_accel_sample_rate_ms(long *sample_rate_ms)
+    273          {
+    274          	*sample_rate_ms = sensors.accel.sample_rate_ms;
+    275          }
+    276          
+    277          void inv_get_compass_sample_rate_ms(long *sample_rate_ms)
+    278          {
+    279          	*sample_rate_ms = sensors.compass.sample_rate_ms;
+    280          }
+    281          
+    282          /** Set Quat Sample rate in micro seconds.
+    283          * @param[in] sample_rate_us Set Quat Sample rate in us
+    284          */
+    285          void inv_set_quat_sample_rate(long sample_rate_us)
+    286          {
+    287          #ifdef INV_PLAYBACK_DBG
+    288              if (inv_data_builder.debug_mode == RD_RECORD) {
+    289                  int type = PLAYBACK_DBG_TYPE_Q_SAMPLE_RATE;
+    290                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    291                  fwrite(&sample_rate_us, sizeof(sample_rate_us), 1, inv_data_builder.file);
+    292              }
+    293          #endif
+    294              sensors.quat.sample_rate_us = sample_rate_us;
+    295              sensors.quat.sample_rate_ms = sample_rate_us / 1000;
+    296          }
+    297          
+    298          /** Set Gyro Bandwidth in Hz
+    299          * @param[in] bandwidth_hz Gyro bandwidth in Hz
+    300          */
+    301          void inv_set_gyro_bandwidth(int bandwidth_hz)
+    302          {
+    303              sensors.gyro.bandwidth = bandwidth_hz;
+    304          }
+    305          
+    306          /** Set Accel Bandwidth in Hz
+    307          * @param[in] bandwidth_hz Gyro bandwidth in Hz
+    308          */
+    309          void inv_set_accel_bandwidth(int bandwidth_hz)
+    310          {
+    311              sensors.accel.bandwidth = bandwidth_hz;
+    312          }
+    313          
+    314          /** Set Compass Bandwidth in Hz
+    315          * @param[in]  bandwidth_hz Gyro bandwidth in Hz
+    316          */
+    317          void inv_set_compass_bandwidth(int bandwidth_hz)
+    318          {
+    319              sensors.compass.bandwidth = bandwidth_hz;
+    320          }
+    321          
+    322          /** Helper function stating whether the compass is on or off.
+    323           * @return TRUE if compass if on, 0 if compass if off
+    324          */
+    325          int inv_get_compass_on()
+    326          {
+    327              return (sensors.compass.status & INV_SENSOR_ON) == INV_SENSOR_ON;
+    328          }
+    329          
+    330          /** Helper function stating whether the gyro is on or off.
+    331           * @return TRUE if gyro if on, 0 if gyro if off
+    332          */
+    333          int inv_get_gyro_on()
+    334          {
+    335              return (sensors.gyro.status & INV_SENSOR_ON) == INV_SENSOR_ON;
+    336          }
+    337          
+    338          /** Helper function stating whether the acceleromter is on or off.
+    339           * @return TRUE if accel if on, 0 if accel if off
+    340          */
+    341          int inv_get_accel_on()
+    342          {
+    343              return (sensors.accel.status & INV_SENSOR_ON) == INV_SENSOR_ON;
+    344          }
+    345          
+    346          /** Get last timestamp across all 3 sensors that are on.
+    347          * This find out which timestamp has the largest value for sensors that are on.
+    348          * @return Returns INV_SUCCESS if successful or an error code if not.
+    349          */
+    350          inv_time_t inv_get_last_timestamp()
+    351          {
+    352              inv_time_t timestamp = 0;
+    353              if (sensors.accel.status & INV_SENSOR_ON) {
+    354                  timestamp = sensors.accel.timestamp;
+    355              }
+    356              if (sensors.gyro.status & INV_SENSOR_ON) {
+    357                  if (timestamp < sensors.gyro.timestamp) {
+    358                      timestamp = sensors.gyro.timestamp;
+    359                  }
+    360              }
+    361              if (sensors.compass.status & INV_SENSOR_ON) {
+    362                  if (timestamp < sensors.compass.timestamp) {
+    363                      timestamp = sensors.compass.timestamp;
+    364                  }
+    365              }
+    366              if (sensors.temp.status & INV_SENSOR_ON) {
+    367                  if (timestamp < sensors.temp.timestamp)
+    368                      timestamp = sensors.temp.timestamp;
+    369              }
+    370              return timestamp;
+    371          }
+    372          
+    373          /** Sets the orientation and sensitivity of the gyro data.
+    374          * @param[in] orientation A scalar defining the transformation from chip mounting
+    375          *            to the body frame. The function inv_orientation_matrix_to_scalar()
+    376          *            can convert the transformation matrix to this scalar and describes the
+    377          *            scalar in further detail.
+    378          * @param[in] sensitivity A scale factor to convert device units to g's
+    379          *            such that g's = device_units * sensitivity / 2^30. Typically
+    380          *            it works out to be the maximum g_value * 2^15.
+    381          */
+    382          void inv_set_accel_orientation_and_scale(int orientation, long sensitivity)
+    383          {
+    384          #ifdef INV_PLAYBACK_DBG
+    385              if (inv_data_builder.debug_mode == RD_RECORD) {
+    386                  int type = PLAYBACK_DBG_TYPE_A_ORIENT;
+    387                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    388                  fwrite(&orientation, sizeof(orientation), 1, inv_data_builder.file);
+    389                  fwrite(&sensitivity, sizeof(sensitivity), 1, inv_data_builder.file);
+    390              }
+    391          #endif
+    392              set_sensor_orientation_and_scale(&sensors.accel, orientation,
+    393                                               sensitivity);
+    394          }
+    395          
+    396          /** Sets the Orientation and Sensitivity of the gyro data.
+    397          * @param[in] orientation A scalar defining the transformation from chip mounting
+    398          *            to the body frame. The function inv_orientation_matrix_to_scalar()
+    399          *            can convert the transformation matrix to this scalar and describes the
+    400          *            scalar in further detail.
+    401          * @param[in] sensitivity A scale factor to convert device units to uT
+    402          *            such that uT = device_units * sensitivity / 2^30. Typically
+    403          *            it works out to be the maximum uT_value * 2^15.
+    404          */
+    405          void inv_set_compass_orientation_and_scale(int orientation, long sensitivity)
+    406          {
+    407          #ifdef INV_PLAYBACK_DBG
+    408              if (inv_data_builder.debug_mode == RD_RECORD) {
+    409                  int type = PLAYBACK_DBG_TYPE_C_ORIENT;
+    410                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    411                  fwrite(&orientation, sizeof(orientation), 1, inv_data_builder.file);
+    412                  fwrite(&sensitivity, sizeof(sensitivity), 1, inv_data_builder.file);
+    413              }
+    414          #endif
+    415              set_sensor_orientation_and_scale(&sensors.compass, orientation, sensitivity);
+    416          }
+    417          
+    418          void inv_matrix_vector_mult(const long *A, const long *x, long *y)
+    419          {
+    420              y[0] = inv_q30_mult(A[0], x[0]) + inv_q30_mult(A[1], x[1]) + inv_q30_mult(A[2], x[2]);
+    421              y[1] = inv_q30_mult(A[3], x[0]) + inv_q30_mult(A[4], x[1]) + inv_q30_mult(A[5], x[2]);
+    422              y[2] = inv_q30_mult(A[6], x[0]) + inv_q30_mult(A[7], x[1]) + inv_q30_mult(A[8], x[2]);
+    423          }
+    424          
+    425          /** Takes raw data stored in the sensor, removes bias, and converts it to
+    426          * calibrated data in the body frame. Also store raw data for body frame.
+    427          * @param[in,out] sensor structure to modify
+    428          * @param[in] bias bias in the mounting frame, in hardware units scaled by
+    429          *                 2^16. Length 3.
+    430          */
+    431          void inv_apply_calibration(struct inv_single_sensor_t *sensor, const long *bias)
+    432          {
+    433              long raw32[3];
+    434          
+    435              // Convert raw to calibrated
+    436              raw32[0] = (long)sensor->raw[0] << 15;
+    437              raw32[1] = (long)sensor->raw[1] << 15;
+    438              raw32[2] = (long)sensor->raw[2] << 15;
+    439          
+    440              inv_convert_to_body_with_scale(sensor->orientation, sensor->sensitivity << 1, raw32, sensor->raw_scaled);
+    441          
+    442              raw32[0] -= bias[0] >> 1;
+    443              raw32[1] -= bias[1] >> 1;
+    444              raw32[2] -= bias[2] >> 1;
+    445          
+    446              inv_convert_to_body_with_scale(sensor->orientation, sensor->sensitivity << 1, raw32, sensor->calibrated);
+    447          
+    448              sensor->status |= INV_CALIBRATED;
+    449          }
+    450          
+    451          /** Returns the current bias for the compass
+    452          * @param[out] bias Compass bias in hardware units scaled by 2^16. In mounting frame.
+    453          *             Length 3.
+    454          */
+    455          void inv_get_compass_bias(long *bias)
+    456          {
+    457              if (bias != NULL) {
+    458                  memcpy(bias, inv_data_builder.save.compass_bias, sizeof(inv_data_builder.save.compass_bias));
+    459              }
+    460          }
+    461          
+    462          void inv_set_compass_bias(const long *bias, int accuracy)
+    463          {
+    464              if (memcmp(inv_data_builder.save.compass_bias, bias, sizeof(inv_data_builder.save.compass_bias))) {
+    465                  memcpy(inv_data_builder.save.compass_bias, bias, sizeof(inv_data_builder.save.compass_bias));
+    466                  inv_apply_calibration(&sensors.compass, inv_data_builder.save.compass_bias);
+    467              }
+    468              sensors.compass.accuracy = accuracy;
+    469              inv_data_builder.save.compass_accuracy = accuracy;
+    470              inv_set_message(INV_MSG_NEW_CB_EVENT, INV_MSG_NEW_CB_EVENT, 0);
+    471          }
+    472          
+    473          /** Set the state of a compass disturbance
+    474          * @param[in] dist 1=disturbance, 0=no disturbance
+    475          */
+    476          void inv_set_compass_disturbance(int dist)
+    477          {
+    478              inv_data_builder.compass_disturbance = dist;
+    479          }
+    480          
+    481          int inv_get_compass_disturbance(void) {
+    482              return inv_data_builder.compass_disturbance;
+    483          }
+    484          /** Sets the accel bias.
+    485          * @param[in] bias Accel bias, length 3. In HW units scaled by 2^16 in body frame
+    486          * @param[in] accuracy Accuracy rating from 0 to 3, with 3 being most accurate.
+    487          */
+    488          void inv_set_accel_bias(const long *bias, int accuracy)
+    489          {
+    490              if (bias) {
+    491                  if (memcmp(inv_data_builder.save.accel_bias, bias, sizeof(inv_data_builder.save.accel_bias))) {
+    492                      memcpy(inv_data_builder.save.accel_bias, bias, sizeof(inv_data_builder.save.accel_bias));
+    493                      inv_apply_calibration(&sensors.accel, inv_data_builder.save.accel_bias);
+    494                  }
+    495              }
+    496              sensors.accel.accuracy = accuracy;
+    497              inv_data_builder.save.accel_accuracy = accuracy;
+    498              inv_set_message(INV_MSG_NEW_AB_EVENT, INV_MSG_NEW_AB_EVENT, 0);
+    499          }
+    500          
+    501          /** Sets the accel accuracy.
+    502          * @param[in] accuracy Accuracy rating from 0 to 3, with 3 being most accurate.
+    503          */
+    504          void inv_set_accel_accuracy(int accuracy)
+    505          {
+    506              sensors.accel.accuracy = accuracy;
+    507              inv_data_builder.save.accel_accuracy = accuracy;
+    508              inv_set_message(INV_MSG_NEW_AB_EVENT, INV_MSG_NEW_AB_EVENT, 0);
+    509          }
+    510          
+    511          /** Sets the accel bias with control over which axis.
+    512          * @param[in] bias Accel bias, length 3. In HW units scaled by 2^16 in body frame
+    513          * @param[in] accuracy Accuracy rating from 0 to 3, with 3 being most accurate.
+    514          * @param[in] mask Mask to select axis to apply bias set.
+    515          */
+    516          void inv_set_accel_bias_mask(const long *bias, int accuracy, int mask)
+    517          {
+    518              if (bias) {
+    519                  if (mask & 1){
+    520                      inv_data_builder.save.accel_bias[0] = bias[0];
+    521                  }
+    522                  if (mask & 2){
+    523                      inv_data_builder.save.accel_bias[1] = bias[1];
+    524                  }
+    525                  if (mask & 4){
+    526                      inv_data_builder.save.accel_bias[2] = bias[2];
+    527                  }
+    528          
+    529                  inv_apply_calibration(&sensors.accel, inv_data_builder.save.accel_bias);
+    530              }
+    531              sensors.accel.accuracy = accuracy;
+    532              inv_data_builder.save.accel_accuracy = accuracy;
+    533              inv_set_message(INV_MSG_NEW_AB_EVENT, INV_MSG_NEW_AB_EVENT, 0);
+    534          }
+    535          
+    536          
+    537          /** Sets the gyro bias
+    538          * @param[in] bias Gyro bias in hardware units scaled by 2^16. In chip mounting frame.
+    539          *            Length 3.
+    540          * @param[in] accuracy Accuracy of bias. 0 = least accurate, 3 = most accurate.
+    541          */
+    542          void inv_set_gyro_bias(const long *bias, int accuracy)
+    543          {
+    544              if (bias != NULL) {
+    545                  if (memcmp(inv_data_builder.save.gyro_bias, bias, sizeof(inv_data_builder.save.gyro_bias))) {
+    546                      memcpy(inv_data_builder.save.gyro_bias, bias, sizeof(inv_data_builder.save.gyro_bias));
+    547                      inv_apply_calibration(&sensors.gyro, inv_data_builder.save.gyro_bias);
+    548                  }
+    549              }
+    550              sensors.gyro.accuracy = accuracy;
+    551              inv_data_builder.save.gyro_accuracy = accuracy;
+    552          
+    553              /* TODO: What should we do if there's no temperature data? */
+    554              if (sensors.temp.calibrated[0])
+    555                  inv_data_builder.save.gyro_temp = sensors.temp.calibrated[0];
+    556              else
+    557                  /* Set to 27 deg C for now until we've got a better solution. */
+    558                  inv_data_builder.save.gyro_temp = 1769472L;
+    559              inv_set_message(INV_MSG_NEW_GB_EVENT, INV_MSG_NEW_GB_EVENT, 0);
+    560          
+    561              /* TODO: this flag works around the synchronization problem seen with using
+    562                 the user-exposed message layer to signal the temperature compensation
+    563                 module that gyro biases were set.
+    564                 A better, cleaner method is certainly needed. */
+    565              inv_data_builder.save.gyro_bias_tc_set = true;
+    566          }
+    567          
+    568          /**
+    569           *  @internal
+    570           *  @brief  Return whether gyro biases were set to signal the temperature
+    571           *          compensation algorithm that it can collect a data point to build
+    572           *          the temperature slope while in no motion state.
+    573           *          The flag clear automatically after is read.
+    574           *  @return true if the flag was set, indicating gyro biases were set.
+    575           *          false if the flag was not set.
+    576           */
+    577          int inv_get_gyro_bias_tc_set(void)
+    578          {
+    579              int flag = (inv_data_builder.save.gyro_bias_tc_set == true);
+    580              inv_data_builder.save.gyro_bias_tc_set = false;
+    581              return flag;
+    582          }
+    583          
+    584          /* TODO: Add this information to inv_sensor_cal_t */
+    585          /**
+    586           *  Get the gyro biases and temperature record from MPL
+    587           *  @param[in] bias
+    588           *              Gyro bias in hardware units scaled by 2^16.
+    589           *              In chip mounting frame.
+    590           *              Length 3.
+    591           *  @param[in] temp
+    592           *              Tempearature in degrees C.
+    593           */
+    594          void inv_get_gyro_bias(long *bias, long *temp)
+    595          {
+    596              if (bias != NULL)
+    597                  memcpy(bias, inv_data_builder.save.gyro_bias,
+    598                         sizeof(inv_data_builder.save.gyro_bias));
+    599              if (temp != NULL)
+    600                  temp[0] = inv_data_builder.save.gyro_temp;
+    601          }
+    602          
+    603          /** Get Accel Bias
+    604          * @param[out] bias Accel bias where
+    605          * @param[out] temp Temperature where 1 C = 2^16
+    606          */
+    607          void inv_get_accel_bias(long *bias, long *temp)
+    608          {
+    609              if (bias != NULL)
+    610                  memcpy(bias, inv_data_builder.save.accel_bias,
+    611                         sizeof(inv_data_builder.save.accel_bias));
+    612              if (temp != NULL)
+    613                  temp[0] = inv_data_builder.save.accel_temp;
+    614          }
+    615          
+    616          /** 
+    617           *  Record new accel data for use when inv_execute_on_data() is called
+    618           *  @param[in]  accel accel data. 
+    619           *              Length 3. 
+    620           *              Calibrated data is in m/s^2 scaled by 2^16 in body frame. 
+    621           *              Raw data is in device units in chip mounting frame.
+    622           *  @param[in]  status 
+    623           *              Lower 2 bits are the accuracy, with 0 being inaccurate, and 3 
+    624           *              being most accurate.
+    625           *              The upper bit INV_CALIBRATED, is set if the data was calibrated 
+    626           *              outside MPL and it is not set if the data being passed is raw. 
+    627           *              Raw data should be in device units, typically in a 16-bit range.
+    628           *  @param[in]  timestamp 
+    629           *              Monotonic time stamp, for Android it's in nanoseconds.
+    630           *  @return     Returns INV_SUCCESS if successful or an error code if not.
+    631           */
+    632          inv_error_t inv_build_accel(const long *accel, int status, inv_time_t timestamp)
+    633          {
+    634          #ifdef INV_PLAYBACK_DBG
+    635              if (inv_data_builder.debug_mode == RD_RECORD) {
+    636                  int type = PLAYBACK_DBG_TYPE_ACCEL;
+    637                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    638                  fwrite(accel, sizeof(accel[0]), 3, inv_data_builder.file);
+    639                  fwrite(&timestamp, sizeof(timestamp), 1, inv_data_builder.file);
+    640              }
+    641          #endif
+    642          
+    643              if ((status & INV_CALIBRATED) == 0) {
+    644                  sensors.accel.raw[0] = (short)accel[0];
+    645                  sensors.accel.raw[1] = (short)accel[1];
+    646                  sensors.accel.raw[2] = (short)accel[2];
+    647                  sensors.accel.status |= INV_RAW_DATA;
+    648                  inv_apply_calibration(&sensors.accel, inv_data_builder.save.accel_bias);
+    649              } else {
+    650                  sensors.accel.calibrated[0] = accel[0];
+    651                  sensors.accel.calibrated[1] = accel[1];
+    652                  sensors.accel.calibrated[2] = accel[2];
+    653                  sensors.accel.status |= INV_CALIBRATED;
+    654                  sensors.accel.accuracy = status & 3;
+    655                  inv_data_builder.save.accel_accuracy = status & 3;
+    656              }
+    657              sensors.accel.status |= INV_NEW_DATA | INV_SENSOR_ON;
+    658              sensors.accel.timestamp_prev = sensors.accel.timestamp;
+    659              sensors.accel.timestamp = timestamp;
+    660          
+    661              return INV_SUCCESS;
+    662          }
+    663          
+    664          /** Record new gyro data and calls inv_execute_on_data() if previous
+    665          * sample has not been processed.
+    666          * @param[in] gyro Data is in device units. Length 3.
+    667          * @param[in] timestamp Monotonic time stamp, for Android it's in nanoseconds.
+    668          * @param[out] executed Set to 1 if data processing was done.
+    669          * @return Returns INV_SUCCESS if successful or an error code if not.
+    670          */
+    671          inv_error_t inv_build_gyro(const short *gyro, inv_time_t timestamp)
+    672          {
+    673          #ifdef INV_PLAYBACK_DBG
+    674              if (inv_data_builder.debug_mode == RD_RECORD) {
+    675                  int type = PLAYBACK_DBG_TYPE_GYRO;
+    676                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    677                  fwrite(gyro, sizeof(gyro[0]), 3, inv_data_builder.file);
+    678                  fwrite(&timestamp, sizeof(timestamp), 1, inv_data_builder.file);
+    679              }
+    680          #endif
+    681          
+    682              memcpy(sensors.gyro.raw, gyro, 3 * sizeof(short));
+    683              sensors.gyro.status |= INV_NEW_DATA | INV_RAW_DATA | INV_SENSOR_ON;
+    684              sensors.gyro.timestamp_prev = sensors.gyro.timestamp;
+    685              sensors.gyro.timestamp = timestamp;
+    686              inv_apply_calibration(&sensors.gyro, inv_data_builder.save.gyro_bias);
+    687          
+    688              return INV_SUCCESS;
+    689          }
+    690          
+    691          /** Record new compass data for use when inv_execute_on_data() is called
+    692          * @param[in] compass Compass data, if it was calibrated outside MPL, the units are uT scaled by 2^16.
+    693          *            Length 3.
+    694          * @param[in] status Lower 2 bits are the accuracy, with 0 being inaccurate, and 3 being most accurate.
+    695          *            The upper bit INV_CALIBRATED, is set if the data was calibrated outside MPL and it is
+    696          *            not set if the data being passed is raw. Raw data should be in device units, typically
+    697          *            in a 16-bit range.
+    698          * @param[in] timestamp Monotonic time stamp, for Android it's in nanoseconds.
+    699          * @param[out] executed Set to 1 if data processing was done.
+    700          * @return Returns INV_SUCCESS if successful or an error code if not.
+    701          */
+    702          inv_error_t inv_build_compass(const long *compass, int status,
+    703                                        inv_time_t timestamp)
+    704          {
+    705          #ifdef INV_PLAYBACK_DBG
+    706              if (inv_data_builder.debug_mode == RD_RECORD) {
+    707                  int type = PLAYBACK_DBG_TYPE_COMPASS;
+    708                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    709                  fwrite(compass, sizeof(compass[0]), 3, inv_data_builder.file);
+    710                  fwrite(&timestamp, sizeof(timestamp), 1, inv_data_builder.file);
+    711              }
+    712          #endif
+    713          
+    714              if ((status & INV_CALIBRATED) == 0) {
+    715                  long data[3];
+    716                  inv_set_compass_soft_iron_input_data(compass);
+    717                  inv_get_compass_soft_iron_output_data(data);
+    718                  sensors.compass.raw[0] = (short)data[0];
+    719                  sensors.compass.raw[1] = (short)data[1];
+    720                  sensors.compass.raw[2] = (short)data[2];
+    721                  inv_apply_calibration(&sensors.compass, inv_data_builder.save.compass_bias);
+    722                  sensors.compass.status |= INV_RAW_DATA;
+    723              } else {
+    724                  sensors.compass.calibrated[0] = compass[0];
+    725                  sensors.compass.calibrated[1] = compass[1];
+    726                  sensors.compass.calibrated[2] = compass[2];
+    727                  sensors.compass.status |= INV_CALIBRATED;
+    728                  sensors.compass.accuracy = status & 3;
+    729                  inv_data_builder.save.compass_accuracy = status & 3;
+    730              }
+    731              sensors.compass.timestamp_prev = sensors.compass.timestamp;
+    732              sensors.compass.timestamp = timestamp;
+    733              sensors.compass.status |= INV_NEW_DATA | INV_SENSOR_ON;
+    734          
+    735              return INV_SUCCESS;
+    736          }
+    737          
+    738          /** Record new temperature data for use when inv_execute_on_data() is called.
+    739           *  @param[in]  temp Temperature data in q16 format.
+    740           *  @param[in]  timestamp   Monotonic time stamp; for Android it's in
+    741           *                          nanoseconds.
+    742          * @return Returns INV_SUCCESS if successful or an error code if not.
+    743           */
+    744          inv_error_t inv_build_temp(const long temp, inv_time_t timestamp)
+    745          {
+    746          #ifdef INV_PLAYBACK_DBG
+    747              if (inv_data_builder.debug_mode == RD_RECORD) {
+    748                  int type = PLAYBACK_DBG_TYPE_TEMPERATURE;
+    749                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    750                  fwrite(&temp, sizeof(temp), 1, inv_data_builder.file);
+    751                  fwrite(&timestamp, sizeof(timestamp), 1, inv_data_builder.file);
+    752              }
+    753          #endif
+    754              sensors.temp.calibrated[0] = temp;
+    755              sensors.temp.status |= INV_NEW_DATA | INV_RAW_DATA | INV_SENSOR_ON;
+    756              sensors.temp.timestamp_prev = sensors.temp.timestamp;
+    757              sensors.temp.timestamp = timestamp;
+    758              /* TODO: Apply scale, remove offset. */
+    759          
+    760              return INV_SUCCESS;
+    761          }
+    762          /** quaternion data
+    763          * @param[in] quat Quaternion data. 2^30 = 1.0 or 2^14=1 for 16-bit data. 
+    764          *                 Real part first. Length 4.  
+    765          * @param[in] status number of axis, 16-bit or 32-bit
+    766          * @param[in] timestamp
+    767          * @param[in]  timestamp   Monotonic time stamp; for Android it's in
+    768          *                         nanoseconds.
+    769          * @param[out] executed Set to 1 if data processing was done.
+    770          * @return Returns INV_SUCCESS if successful or an error code if not.
+    771          */
+    772          inv_error_t inv_build_quat(const long *quat, int status, inv_time_t timestamp)
+    773          {
+    774          #ifdef INV_PLAYBACK_DBG
+    775              if (inv_data_builder.debug_mode == RD_RECORD) {
+    776                  int type = PLAYBACK_DBG_TYPE_QUAT;
+    777                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    778                  fwrite(quat, sizeof(quat[0]), 4, inv_data_builder.file);
+    779                  fwrite(&timestamp, sizeof(timestamp), 1, inv_data_builder.file);
+    780              }
+    781          #endif
+    782              
+    783              memcpy(sensors.quat.raw, quat, sizeof(sensors.quat.raw));
+    784              sensors.quat.timestamp = timestamp;
+    785              sensors.quat.status |= INV_NEW_DATA | INV_RAW_DATA | INV_SENSOR_ON;
+    786              sensors.quat.status |= (INV_BIAS_APPLIED & status);
+    787          
+    788              return INV_SUCCESS;
+    789          }
+    790          
+    791          /** This should be called when the accel has been turned off. This is so
+    792          * that we will know if the data is contiguous.
+    793          */
+    794          void inv_accel_was_turned_off()
+    795          {
+    796              sensors.accel.status = 0;
+    797          }
+    798          
+    799          /** This should be called when the compass has been turned off. This is so
+    800          * that we will know if the data is contiguous.
+    801          */
+    802          void inv_compass_was_turned_off()
+    803          {
+    804              sensors.compass.status = 0;
+    805          }
+    806          
+    807          /** This should be called when the quaternion data from the DMP has been turned off. This is so
+    808          * that we will know if the data is contiguous.
+    809          */
+    810          void inv_quaternion_sensor_was_turned_off(void)
+    811          {
+    812              sensors.quat.status = 0;
+    813          }
+    814          
+    815          /** This should be called when the gyro has been turned off. This is so
+    816          * that we will know if the data is contiguous.
+    817          */
+    818          void inv_gyro_was_turned_off()
+    819          {
+    820              sensors.gyro.status = 0;
+    821          }
+    822          
+    823          /** This should be called when the temperature sensor has been turned off.
+    824           *  This is so that we will know if the data is contiguous.
+    825           */
+    826          void inv_temperature_was_turned_off()
+    827          {
+    828              sensors.temp.status = 0;
+    829          }
+    830          
+    831          /** Registers to receive a callback when there is new sensor data.
+    832          * @internal
+    833          * @param[in] func Function pointer to receive callback when there is new sensor data
+    834          * @param[in] priority Lower priority numbers receive a callback before larger numbers. All priority
+    835          *            numbers must be unique.
+    836          * @param[in] sensor_type Sets the type of data that triggers the callback. Must be non-zero. May be
+    837          *            a combination. INV_ACCEL_NEW = accel data, INV_GYRO_NEW =
+    838          *            gyro data, INV_MAG_NEW = compass data. So passing in
+    839          *            INV_ACCEL_NEW | INV_MAG_NEW, a
+    840          *            callback would be generated if there was new magnetomer data OR new accel data.
+    841          */
+    842          inv_error_t inv_register_data_cb(
+    843              inv_error_t (*func)(struct inv_sensor_cal_t *data),
+    844              int priority, int sensor_type)
+    845          {
+    846              inv_error_t result = INV_SUCCESS;
+    847              int kk, nn;
+    848          
+    849              // Make sure we haven't registered this function already
+    850              // Or used the same priority
+    851              for (kk = 0; kk < inv_data_builder.num_cb; ++kk) {
+    852                  if ((inv_data_builder.process[kk].func == func) ||
+    853                          (inv_data_builder.process[kk].priority == priority)) {
+    854                      return INV_ERROR_INVALID_PARAMETER;    //fixme give a warning
+    855                  }
+    856              }
+    857          
+    858              // Make sure we have not filled up our number of allowable callbacks
+    859              if (inv_data_builder.num_cb <= INV_MAX_DATA_CB - 1) {
+    860                  kk = 0;
+    861                  if (inv_data_builder.num_cb != 0) {
+    862                      // set kk to be where this new callback goes in the array
+    863                      while ((kk < inv_data_builder.num_cb) &&
+    864                              (inv_data_builder.process[kk].priority < priority)) {
+    865                          kk++;
+    866                      }
+    867                      if (kk != inv_data_builder.num_cb) {
+    868                          // We need to move the others
+    869                          for (nn = inv_data_builder.num_cb; nn > kk; --nn) {
+    870                              inv_data_builder.process[nn] =
+    871                                  inv_data_builder.process[nn - 1];
+    872                          }
+    873                      }
+    874                  }
+    875                  // Add new callback
+    876                  inv_data_builder.process[kk].func = func;
+    877                  inv_data_builder.process[kk].priority = priority;
+    878                  inv_data_builder.process[kk].data_required = sensor_type;
+    879                  inv_data_builder.num_cb++;
+    880              } else {
+    881                  MPL_LOGE("Unable to add feature callback as too many were already registered\n");
+    882                  result = INV_ERROR_MEMORY_EXAUSTED;
+    883              }
+    884          
+    885              return result;
+    886          }
+    887          
+    888          /** Unregisters the callback that happens when new sensor data is received.
+    889          * @internal
+    890          * @param[in] func Function pointer to receive callback when there is new sensor data
+    891          * @param[in] priority Lower priority numbers receive a callback before larger numbers. All priority
+    892          *            numbers must be unique.
+    893          * @param[in] sensor_type Sets the type of data that triggers the callback. Must be non-zero. May be
+    894          *            a combination. INV_ACCEL_NEW = accel data, INV_GYRO_NEW =
+    895          *            gyro data, INV_MAG_NEW = compass data. So passing in
+    896          *            INV_ACCEL_NEW | INV_MAG_NEW, a
+    897          *            callback would be generated if there was new magnetomer data OR new accel data.
+    898          */
+    899          inv_error_t inv_unregister_data_cb(
+    900              inv_error_t (*func)(struct inv_sensor_cal_t *data))
+    901          {
+    902              int kk, nn;
+    903          
+    904              for (kk = 0; kk < inv_data_builder.num_cb; ++kk) {
+    905                  if (inv_data_builder.process[kk].func == func) {
+    906                      // Delete this callback
+    907                      for (nn = kk + 1; nn < inv_data_builder.num_cb; ++nn) {
+    908                          inv_data_builder.process[nn - 1] =
+    909                              inv_data_builder.process[nn];
+    910                      }
+    911                      inv_data_builder.num_cb--;
+    912                      return INV_SUCCESS;
+    913                  }
+    914              }
+    915          
+    916              return INV_SUCCESS;    // We did not find the callback
+    917          }
+    918          
+    919          /** After at least one of inv_build_gyro(), inv_build_accel(), or
+    920          * inv_build_compass() has been called, this function should be called.
+    921          * It will process the data it has received and update all the internal states
+    922          * and features that have been turned on.
+    923          * @return Returns INV_SUCCESS if successful or an error code if not.
+    924          */
+    925          inv_error_t inv_execute_on_data(void)
+    926          {
+    927              inv_error_t result, first_error;
+    928              int kk;
+    929              int mode;
+    930          
+    931          #ifdef INV_PLAYBACK_DBG
+    932              if (inv_data_builder.debug_mode == RD_RECORD) {
+    933                  int type = PLAYBACK_DBG_TYPE_EXECUTE;
+    934                  fwrite(&type, sizeof(type), 1, inv_data_builder.file);
+    935              }
+    936          #endif
+    937              // Determine what new data we have
+    938              mode = 0;
+    939              if (sensors.gyro.status & INV_NEW_DATA)
+    940                  mode |= INV_GYRO_NEW;
+    941              if (sensors.accel.status & INV_NEW_DATA)
+    942                  mode |= INV_ACCEL_NEW;
+    943              if (sensors.compass.status & INV_NEW_DATA)
+    944                  mode |= INV_MAG_NEW;
+    945              if (sensors.temp.status & INV_NEW_DATA)
+    946                  mode |= INV_TEMP_NEW;
+    947              if (sensors.quat.status & INV_NEW_DATA)
+    948                  mode |= INV_QUAT_NEW;
+    949          
+    950              first_error = INV_SUCCESS;
+    951          
+    952              for (kk = 0; kk < inv_data_builder.num_cb; ++kk) {
+    953                  if (mode & inv_data_builder.process[kk].data_required) {
+    954                      result = inv_data_builder.process[kk].func(&sensors);
+    955                      if (result && !first_error) {
+    956                          first_error = result;
+    957                      }
+    958                  }
+    959              }
+    960          
+    961              inv_set_contiguous();
+    962          
+    963              return first_error;
+    964          }
+    965          
+    966          /** Cleans up status bits after running all the callbacks. It sets the contiguous flag.
+    967          *
+    968          */
+    969          static void inv_set_contiguous(void)
+    970          {
+    971              inv_time_t current_time = 0;
+    972              if (sensors.gyro.status & INV_NEW_DATA) {
+    973                  sensors.gyro.status |= INV_CONTIGUOUS;
+    974                  current_time = sensors.gyro.timestamp;
+    975              }
+    976              if (sensors.accel.status & INV_NEW_DATA) {
+    977                  sensors.accel.status |= INV_CONTIGUOUS;
+    978                  current_time = MAX(current_time, sensors.accel.timestamp);
+    979              }
+    980              if (sensors.compass.status & INV_NEW_DATA) {
+    981                  sensors.compass.status |= INV_CONTIGUOUS;
+    982                  current_time = MAX(current_time, sensors.compass.timestamp);
+    983              }
+    984              if (sensors.temp.status & INV_NEW_DATA) {
+    985                  sensors.temp.status |= INV_CONTIGUOUS;
+    986                  current_time = MAX(current_time, sensors.temp.timestamp);
+    987              }
+    988              if (sensors.quat.status & INV_NEW_DATA) {
+    989                  sensors.quat.status |= INV_CONTIGUOUS;
+    990                  current_time = MAX(current_time, sensors.quat.timestamp);
+    991              }
+    992          
+    993          #if 0
+    994              /* See if sensors are still on. These should be turned off by inv_*_was_turned_off()
+    995               * type functions. This is just in case that breaks down. We make sure
+    996               * all the data is within 2 seconds of the newest piece of data*/
+    997              if (inv_delta_time_ms(current_time, sensors.gyro.timestamp) >= 2000)
+    998                  inv_gyro_was_turned_off();
+    999              if (inv_delta_time_ms(current_time, sensors.accel.timestamp) >= 2000)
+   1000                  inv_accel_was_turned_off();
+   1001              if (inv_delta_time_ms(current_time, sensors.compass.timestamp) >= 2000)
+   1002                  inv_compass_was_turned_off();
+   1003              /* TODO: Temperature might not need to be read this quickly. */
+   1004              if (inv_delta_time_ms(current_time, sensors.temp.timestamp) >= 2000)
+   1005                  inv_temperature_was_turned_off();
+   1006          #endif
+   1007          
+   1008              /* clear bits */
+   1009              sensors.gyro.status &= ~INV_NEW_DATA;
+   1010              sensors.accel.status &= ~INV_NEW_DATA;
+   1011              sensors.compass.status &= ~INV_NEW_DATA;
+   1012              sensors.temp.status &= ~INV_NEW_DATA;
+   1013              sensors.quat.status &= ~INV_NEW_DATA;
+   1014          }
+   1015          
+   1016          /** Gets a whole set of accel data including data, accuracy and timestamp.
+   1017           * @param[out] data Accel Data where 1g = 2^16
+   1018           * @param[out] accuracy Accuracy 0 being not accurate, and 3 being most accurate.
+   1019           * @param[out] timestamp The timestamp of the data sample.
+   1020          */
+   1021          void inv_get_accel_set(long *data, int8_t *accuracy, inv_time_t *timestamp)
+   1022          {
+   1023              if (data != NULL) {
+   1024                  memcpy(data, sensors.accel.calibrated, sizeof(sensors.accel.calibrated));
+   1025              }
+   1026              if (timestamp != NULL) {
+   1027                  *timestamp = sensors.accel.timestamp;
+   1028              }
+   1029              if (accuracy != NULL) {
+   1030                  *accuracy = sensors.accel.accuracy;
+   1031              }
+   1032          }
+   1033          
+   1034          /** Gets a whole set of gyro data including data, accuracy and timestamp.
+   1035           * @param[out] data Gyro Data where 1 dps = 2^16
+   1036           * @param[out] accuracy Accuracy 0 being not accurate, and 3 being most accurate.
+   1037           * @param[out] timestamp The timestamp of the data sample.
+   1038          */
+   1039          void inv_get_gyro_set(long *data, int8_t *accuracy, inv_time_t *timestamp)
+   1040          {
+   1041              memcpy(data, sensors.gyro.calibrated, sizeof(sensors.gyro.calibrated));
+   1042              if (timestamp != NULL) {
+   1043                  *timestamp = sensors.gyro.timestamp;
+   1044              }
+   1045              if (accuracy != NULL) {
+   1046                  *accuracy = sensors.gyro.accuracy;
+   1047              }
+   1048          }
+   1049          
+   1050          /** Gets a whole set of gyro raw data including data, accuracy and timestamp.
+   1051           * @param[out] data Gyro Data where 1 dps = 2^16
+   1052           * @param[out] accuracy Accuracy 0 being not accurate, and 3 being most accurate.
+   1053           * @param[out] timestamp The timestamp of the data sample.
+   1054          */
+   1055          void inv_get_gyro_set_raw(long *data, int8_t *accuracy, inv_time_t *timestamp)
+   1056          {
+   1057              memcpy(data, sensors.gyro.raw_scaled, sizeof(sensors.gyro.raw_scaled));
+   1058              if (timestamp != NULL) {
+   1059                  *timestamp = sensors.gyro.timestamp;
+   1060              }
+   1061              if (accuracy != NULL) {
+   1062                  *accuracy = sensors.gyro.accuracy;
+   1063              }
+   1064          }
+   1065          
+   1066          /** Get's latest gyro data.
+   1067          * @param[out] gyro Gyro Data, Length 3. 1 dps = 2^16.
+   1068          */
+   1069          void inv_get_gyro(long *gyro)
+   1070          {
+   1071              memcpy(gyro, sensors.gyro.calibrated, sizeof(sensors.gyro.calibrated));
+   1072          }
+   1073          
+   1074          /** Gets a whole set of compass data including data, accuracy and timestamp.
+   1075           * @param[out] data Compass Data where 1 uT = 2^16
+   1076           * @param[out] accuracy Accuracy 0 being not accurate, and 3 being most accurate.
+   1077           * @param[out] timestamp The timestamp of the data sample.
+   1078          */
+   1079          void inv_get_compass_set(long *data, int8_t *accuracy, inv_time_t *timestamp)
+   1080          {
+   1081              memcpy(data, sensors.compass.calibrated, sizeof(sensors.compass.calibrated));
+   1082              if (timestamp != NULL) {
+   1083                  *timestamp = sensors.compass.timestamp;
+   1084              }
+   1085              if (accuracy != NULL) {
+   1086                  if (inv_data_builder.compass_disturbance)
+   1087                      *accuracy = 0;
+   1088                  else
+   1089                      *accuracy = sensors.compass.accuracy;
+   1090              }
+   1091          }
+   1092          
+   1093          /** Gets a whole set of temperature data including data, accuracy and timestamp.
+   1094           *  @param[out] data        Temperature data where 1 degree C = 2^16
+   1095           *  @param[out] accuracy    0 to 3, where 3 is most accurate.
+   1096           *  @param[out] timestamp   The timestamp of the data sample.
+   1097           */
+   1098          void inv_get_temp_set(long *data, int *accuracy, inv_time_t *timestamp)
+   1099          {
+   1100              data[0] = sensors.temp.calibrated[0];
+   1101              if (timestamp)
+   1102                  *timestamp = sensors.temp.timestamp;
+   1103              if (accuracy)
+   1104                  *accuracy = sensors.temp.accuracy;
+   1105          }
+   1106          
+   1107          /** Returns accuracy of gyro.
+   1108           * @return Accuracy of gyro with 0 being not accurate, and 3 being most accurate.
+   1109          */
+   1110          int inv_get_gyro_accuracy(void)
+   1111          {
+   1112              return sensors.gyro.accuracy;
+   1113          }
+   1114          
+   1115          /** Returns accuracy of compass.
+   1116           * @return Accuracy of compass with 0 being not accurate, and 3 being most accurate.
+   1117          */
+   1118          int inv_get_mag_accuracy(void)
+   1119          {
+   1120              if (inv_data_builder.compass_disturbance)
+   1121                  return 0;
+   1122              return sensors.compass.accuracy;
+   1123          }
+   1124          
+   1125          /** Returns accuracy of accel.
+   1126           * @return Accuracy of accel with 0 being not accurate, and 3 being most accurate.
+   1127          */
+   1128          int inv_get_accel_accuracy(void)
+   1129          {
+   1130              return sensors.accel.accuracy;
+   1131          }
+   1132          
+   1133          inv_error_t inv_get_gyro_orient(int *orient)
+   1134          {
+   1135              *orient = sensors.gyro.orientation;
+   1136              return 0;
+   1137          }
+   1138          
+   1139          inv_error_t inv_get_accel_orient(int *orient)
+   1140          {
+   1141              *orient = sensors.accel.orientation;
+   1142              return 0;
+   1143          }
+   1144          
+   1145          /*======================================================================*/
+   1146          /*   compass soft iron module                                           */
+   1147          /*======================================================================*/
+   1148          
+   1149          /** Gets the 3x3 compass transform matrix in 32 bit Q30 fixed point format.
+   1150           * @param[out] the pointer of the 3x3 matrix in Q30 format
+   1151          */
+   1152          void inv_get_compass_soft_iron_matrix_d(long *matrix) {
+   1153              int i;
+   1154              for (i=0; i<9; i++)  {
+   1155                  matrix[i] = sensors.soft_iron.matrix_d[i];
+   1156              }
+   1157          }
+   1158          
+   1159          /** Sets the 3x3 compass transform matrix in 32 bit Q30 fixed point format.
+   1160           * @param[in] the pointer of the 3x3 matrix in Q30 format
+   1161          */
+   1162          void inv_set_compass_soft_iron_matrix_d(long *matrix)  {
+   1163              int i;
+   1164              for (i=0; i<9; i++)  {
+   1165                  // set the floating point matrix
+   1166                  sensors.soft_iron.matrix_d[i] = matrix[i];
+   1167                  // convert to Q30 format
+   1168                  sensors.soft_iron.matrix_f[i] = inv_q30_to_float(matrix[i]);
+   1169              }
+   1170          }
+   1171          /** Gets the 3x3 compass transform matrix in 32 bit floating point format.
+   1172           * @param[out] the pointer of the 3x3 matrix in floating point format
+   1173          */
+   1174          void inv_get_compass_soft_iron_matrix_f(float *matrix)  {
+   1175              int i;
+   1176              for (i=0; i<9; i++)  {
+   1177                  matrix[i] = sensors.soft_iron.matrix_f[i];
+   1178              }
+   1179          }
+   1180          /** Sets the 3x3 compass transform matrix in 32 bit floating point format.
+   1181           * @param[in] the pointer of the 3x3 matrix in floating point format
+   1182          */
+   1183          void inv_set_compass_soft_iron_matrix_f(float *matrix)   {
+   1184              int i;
+   1185              for (i=0; i<9; i++)  {
+   1186                  // set the floating point matrix
+   1187                  sensors.soft_iron.matrix_f[i] = matrix[i];
+   1188                  // convert to Q30 format
+   1189                  sensors.soft_iron.matrix_d[i] = (long )(matrix[i]*ROT_MATRIX_SCALE_LONG);
+   1190              }
+   1191          }
+   1192          
+   1193          /** This subroutine gets the fixed point Q30 compass data after the soft iron transformation.
+   1194           * @param[out] the pointer of the 3x1 vector compass data in MPL format
+   1195          */
+   1196          void inv_get_compass_soft_iron_output_data(long *data) {
+   1197              int i;
+   1198              for (i=0; i<3; i++)  {
+   1199                  data[i] = sensors.soft_iron.trans[i];
+   1200              }
+   1201          }
+   1202          /** This subroutine gets the fixed point Q30 compass data before the soft iron transformation.
+   1203           * @param[out] the pointer of the 3x1 vector compass data in MPL format
+   1204          */
+   1205          void inv_get_compass_soft_iron_input_data(long *data)  {
+   1206              int i;
+   1207              for (i=0; i<3; i++)  {
+   1208                  data[i] = sensors.soft_iron.raw[i];
+   1209              }
+   1210          }
+   1211          /** This subroutine sets the compass raw data for the soft iron transformation.
+   1212           * @param[int] the pointer of the 3x1 vector compass raw data in MPL format
+   1213          */
+   1214          void inv_set_compass_soft_iron_input_data(const long *data)  {
+   1215              int i;
+   1216              for (i=0; i<3; i++)  {
+   1217                  sensors.soft_iron.raw[i] = data[i];
+   1218              }
+   1219              if (sensors.soft_iron.enable == 1)  {
+   1220                  mlMatrixVectorMult(sensors.soft_iron.matrix_d, data, sensors.soft_iron.trans);
+   1221              } else {
+   1222                  for (i=0; i<3; i++)  {
+   1223                      sensors.soft_iron.trans[i] = data[i];
+   1224                  }
+   1225              }
+   1226          }
+   1227          
+   1228          /** This subroutine resets the the soft iron transformation to unity matrix and
+   1229           * disable the soft iron transformation process by default.
+   1230          */
+   1231          void inv_reset_compass_soft_iron_matrix(void)  {
+   1232              int i;
+   1233              for (i=0; i<9; i++) {
+   1234                  sensors.soft_iron.matrix_f[i] = 0.0f;
+   1235              }
+   1236          
+   1237              memset(&sensors.soft_iron.matrix_d,0,sizeof(sensors.soft_iron.matrix_d));
+   1238          
+   1239              for (i=0; i<3; i++)  {
+   1240                  // set the floating point matrix
+   1241                  sensors.soft_iron.matrix_f[i*4] = 1.0;
+   1242                  // set the fixed point matrix
+   1243                  sensors.soft_iron.matrix_d[i*4] = ROT_MATRIX_SCALE_LONG;
+   1244              }
+   1245          
+   1246              inv_disable_compass_soft_iron_matrix();
+   1247          }
+   1248          
+   1249          /** This subroutine enables the the soft iron transformation process.
+   1250          */
+   1251          void inv_enable_compass_soft_iron_matrix(void)   {
+   1252              sensors.soft_iron.enable = 1;
+   1253          }
+   1254          
+   1255          /** This subroutine disables the the soft iron transformation process.
+   1256          */
+   1257          void inv_disable_compass_soft_iron_matrix(void)   {
+   1258              sensors.soft_iron.enable = 0;
+   1259          }
+   1260          
+   1261          /**
+   1262           * @}
+   1263           */
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   inv_accel_was_turned_off
+      24   inv_apply_calibration
+        24   -> inv_convert_to_body_with_scale
+       8   inv_build_accel
+         8   -> inv_apply_calibration
+      24   inv_build_compass
+        24   -> inv_apply_calibration
+        24   -> inv_get_compass_soft_iron_output_data
+        24   -> inv_set_compass_soft_iron_input_data
+      16   inv_build_gyro
+        16   -> __aeabi_memcpy
+        16   -> inv_apply_calibration
+      16   inv_build_quat
+        16   -> __aeabi_memcpy
+       0   inv_build_temp
+       0   inv_compass_was_turned_off
+       8   inv_db_load_func
+         8   -> __aeabi_memcpy
+         8   -> inv_set_compass_bias_found
+       8   inv_db_save_func
+         8   -> __aeabi_memcpy
+       0   inv_disable_compass_soft_iron_matrix
+       0   inv_enable_compass_soft_iron_matrix
+      16   inv_execute_on_data
+        16   -- Indirect call
+        16   -> inv_set_contiguous
+       0   inv_get_accel_accuracy
+      16   inv_get_accel_bias
+        16   -> __aeabi_memcpy
+       0   inv_get_accel_on
+       0   inv_get_accel_orient
+       0   inv_get_accel_sample_rate_ms
+       0   inv_get_accel_sensitivity
+      16   inv_get_accel_set
+        16   -> __aeabi_memcpy
+       8   inv_get_compass_bias
+         8   -> __aeabi_memcpy
+       0   inv_get_compass_disturbance
+       0   inv_get_compass_on
+       0   inv_get_compass_sample_rate_ms
+       0   inv_get_compass_sensitivity
+      16   inv_get_compass_set
+        16   -> __aeabi_memcpy
+       0   inv_get_compass_soft_iron_input_data
+       0   inv_get_compass_soft_iron_matrix_d
+       0   inv_get_compass_soft_iron_matrix_f
+       0   inv_get_compass_soft_iron_output_data
+       8   inv_get_gyro
+         8   -> __aeabi_memcpy
+       0   inv_get_gyro_accuracy
+      16   inv_get_gyro_bias
+        16   -> __aeabi_memcpy
+       0   inv_get_gyro_bias_tc_set
+       0   inv_get_gyro_on
+       0   inv_get_gyro_orient
+       0   inv_get_gyro_sample_rate_ms
+       0   inv_get_gyro_sensitivity
+      16   inv_get_gyro_set
+        16   -> __aeabi_memcpy
+      16   inv_get_gyro_set_raw
+        16   -> __aeabi_memcpy
+       0   inv_get_last_timestamp
+       0   inv_get_mag_accuracy
+       0   inv_get_temp_set
+       0   inv_gyro_was_turned_off
+       8   inv_init_data_builder
+         8   -> __aeabi_memset
+         8   -> inv_register_load_store
+         8   -> inv_reset_compass_soft_iron_matrix
+      24   inv_matrix_vector_mult
+        24   -> inv_q30_mult
+       0   inv_q30_to_float
+       0   inv_quaternion_sensor_was_turned_off
+      24   inv_register_data_cb
+        24   -> _MLPrintLog
+       8   inv_reset_compass_soft_iron_matrix
+         8   -> __aeabi_memset
+         8   -> inv_disable_compass_soft_iron_matrix
+       8   inv_set_accel_accuracy
+         8   -> inv_set_message
+       0   inv_set_accel_bandwidth
+      16   inv_set_accel_bias
+        16   -> __aeabi_memcpy
+        16   -> inv_apply_calibration
+        16   -> inv_set_message
+        16   -> memcmp
+       8   inv_set_accel_bias_mask
+         8   -> inv_apply_calibration
+         8   -> inv_set_message
+       8   inv_set_accel_orientation_and_scale
+         8   -> set_sensor_orientation_and_scale
+       0   inv_set_accel_sample_rate
+       0   inv_set_compass_bandwidth
+      16   inv_set_compass_bias
+        16   -> __aeabi_memcpy
+        16   -> inv_apply_calibration
+        16   -> inv_set_message
+        16   -> memcmp
+       0   inv_set_compass_disturbance
+       8   inv_set_compass_orientation_and_scale
+         8   -> set_sensor_orientation_and_scale
+       0   inv_set_compass_sample_rate
+       8   inv_set_compass_soft_iron_input_data
+         8   -> mlMatrixVectorMult
+      16   inv_set_compass_soft_iron_matrix_d
+        16   -> inv_q30_to_float
+       0   inv_set_compass_soft_iron_matrix_f
+       0   inv_set_contiguous
+       0   inv_set_gyro_bandwidth
+      16   inv_set_gyro_bias
+        16   -> __aeabi_memcpy
+        16   -> inv_apply_calibration
+        16   -> inv_set_message
+        16   -> memcmp
+       8   inv_set_gyro_orientation_and_scale
+         8   -> set_sensor_orientation_and_scale
+       0   inv_set_gyro_sample_rate
+       0   inv_set_quat_sample_rate
+       0   inv_temperature_was_turned_off
+       8   inv_unregister_data_cb
+       0   set_sensor_orientation_and_scale
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable23
+       4  ??DataTable52
+       4  ??DataTable53
+       4  ??DataTable53_1
+       4  ??DataTable58
+       4  ??DataTable59
+       4  ??DataTable62
+       4  ??DataTable65
+       4  ??DataTable69
+       4  ??DataTable69_1
+       4  ??DataTable69_10
+       4  ??DataTable69_11
+       4  ??DataTable69_12
+       4  ??DataTable69_13
+       4  ??DataTable69_14
+       4  ??DataTable69_2
+       4  ??DataTable69_3
+       4  ??DataTable69_4
+       4  ??DataTable69_5
+       4  ??DataTable69_6
+       4  ??DataTable69_7
+       4  ??DataTable69_8
+       4  ??DataTable69_9
+       4  ?_0
+      68  ?_1
+      10  inv_accel_was_turned_off
+     106  inv_apply_calibration
+     170  inv_build_accel
+     208  inv_build_compass
+      68  inv_build_gyro
+      74  inv_build_quat
+      56  inv_build_temp
+      12  inv_compass_was_turned_off
+     320  inv_data_builder
+      82  inv_db_load_func
+      20  inv_db_save_func
+      10  inv_disable_compass_soft_iron_matrix
+      10  inv_enable_compass_soft_iron_matrix
+     142  inv_execute_on_data
+       6  inv_get_accel_accuracy
+      38  inv_get_accel_bias
+      14  inv_get_accel_on
+      10  inv_get_accel_orient
+      10  inv_get_accel_sample_rate_ms
+       8  inv_get_accel_sensitivity
+      44  inv_get_accel_set
+      22  inv_get_compass_bias
+      10  inv_get_compass_disturbance
+      16  inv_get_compass_on
+      12  inv_get_compass_sample_rate_ms
+      10  inv_get_compass_sensitivity
+      60  inv_get_compass_set
+      26  inv_get_compass_soft_iron_input_data
+      26  inv_get_compass_soft_iron_matrix_d
+      26  inv_get_compass_soft_iron_matrix_f
+      26  inv_get_compass_soft_iron_output_data
+      16  inv_get_gyro
+       6  inv_get_gyro_accuracy
+      38  inv_get_gyro_bias
+      30  inv_get_gyro_bias_tc_set
+      14  inv_get_gyro_on
+      10  inv_get_gyro_orient
+      10  inv_get_gyro_sample_rate_ms
+       8  inv_get_gyro_sensitivity
+      40  inv_get_gyro_set
+      40  inv_get_gyro_set_raw
+     110  inv_get_last_timestamp
+      22  inv_get_mag_accuracy
+      34  inv_get_temp_set
+      10  inv_gyro_was_turned_off
+      58  inv_init_data_builder
+     106  inv_matrix_vector_mult
+      18  inv_q30_to_float
+      12  inv_quaternion_sensor_was_turned_off
+     236  inv_register_data_cb
+      80  inv_reset_compass_soft_iron_matrix
+      28  inv_set_accel_accuracy
+      10  inv_set_accel_bandwidth
+      78  inv_set_accel_bias
+      88  inv_set_accel_bias_mask
+      16  inv_set_accel_orientation_and_scale
+      50  inv_set_accel_sample_rate
+      10  inv_set_compass_bandwidth
+      76  inv_set_compass_bias
+      10  inv_set_compass_disturbance
+      16  inv_set_compass_orientation_and_scale
+      54  inv_set_compass_sample_rate
+      74  inv_set_compass_soft_iron_input_data
+      48  inv_set_compass_soft_iron_matrix_d
+      48  inv_set_compass_soft_iron_matrix_f
+     262  inv_set_contiguous
+       8  inv_set_gyro_bandwidth
+     130  inv_set_gyro_bias
+      16  inv_set_gyro_orientation_and_scale
+      46  inv_set_gyro_sample_rate
+      26  inv_set_quat_sample_rate
+      12  inv_temperature_was_turned_off
+     108  inv_unregister_data_cb
+     408  sensors
+       6  set_sensor_orientation_and_scale
+
+ 
+   728 bytes in section .bss
+    72 bytes in section .rodata
+ 3 542 bytes in section .text
+ 
+ 3 542 bytes of CODE  memory
+    72 bytes of CONST memory
+   728 bytes of DATA  memory
+
+Errors: none
+Warnings: none

@@ -1,0 +1,66 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ARM Debug-linux",
+            "type": "cppdbg",
+            "request": "launch",
+            "miDebuggerPath": "arm-none-eabi-gdb",
+            "targetArchitecture": "arm",
+            "program": "${workspaceFolder}/Debug/MPU6050_I2C.elf",
+            "setupCommands": [
+                {
+                    "text": "file '${workspaceFolder}/Debug/MPU6050_I2C.elf'"
+                },
+                {
+                    "text": "target remote localhost:3333"
+                },
+                {
+                    "text": "monitor reset"
+                },
+                {
+                    "text": "monitor halt"
+                },
+                {
+                    "text": "load"
+                }
+            ],
+            "preLaunchTask": "Build",
+            //"launchCompleteCommand": "None",
+            //"externalConsole": true,
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "name": "ARM Debug-win",
+            "type": "cppdbg",
+            "request": "launch",
+            "miDebuggerPath": "arm-none-eabi-gdb.exe",
+            "targetArchitecture": "arm",
+            "program": "F:/Project/STM32_Project/MPU6050_I2C/Debug/MPU6050_I2C.elf",
+            "setupCommands": [
+                {
+                    "text": "file 'F:/Project/STM32_Project/MPU6050_I2C/Debug/MPU6050_I2C.elf'"
+                },
+                {
+                    "text": "target remote localhost:3333"
+                },
+                {
+                    "text": "monitor reset"
+                },
+                {
+                    "text": "monitor halt"
+                },
+                {
+                    "text": "load"
+                }
+            ],
+            "preLaunchTask": "Build",
+            //"launchCompleteCommand": "None",
+            //"externalConsole": true,
+            "cwd": "${workspaceRoot}"
+        },
+    ]
+}

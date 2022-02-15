@@ -1,0 +1,11 @@
+mpu6050.c:17:6:MPU6050_WriteReg	16	static
+mpu6050.c:29:6:MPU6050_ReadData	16	static
+mpu6050.c:39:6:MPU6050_Init	8	static
+mpu6050.c:56:9:MPU6050ReadID	80	static
+mpu6050.c:83:6:MPU6050ReadAcc	24	static
+mpu6050.c:97:6:MPU6050ReadGyro	24	static
+mpu6050.c:111:6:MPU6050ReadTemp	24	static
+mpu6050.c:123:6:MPU6050_ReturnTemp	24	static
+mpu6050.c:138:13:I2Cx_Error	16	static
+mpu6050.c:155:5:Sensors_I2C_ReadRegister	40	static
+mpu6050.c:190:5:Sensors_I2C_WriteRegister	40	static

@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "stm32f1xx.h": "c",
+        "main.h": "c",
+        "stm32f1xx_hal.h": "c",
+        "STM32F1XX_HAL.H": "cpp",
+        "i2c.h": "c",
+        "cstdio": "c",
+        "usart.h": "c",
+        "stm32f103xe.h": "c",
+        "cstdint": "c",
+        "inv_mpu.h": "c",
+        "log.h": "c",
+        "bsp_i2c.h": "c",
+        "string.h": "c",
+        "stm32f1_porting.h": "c",
+        "empl_outputs.h": "c"
+    }
+}

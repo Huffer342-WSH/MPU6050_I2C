@@ -1,0 +1,187 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:27
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\start_manager.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\start_manager.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\start_manager.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\start_manager.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\start_manager.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          
+      8          /*******************************************************************************
+      9           *
+     10           * $Id:$
+     11           *
+     12           ******************************************************************************/
+     13          /**
+     14           *   @defgroup  Start_Manager start_manager
+     15           *   @brief     Motion Library - Start Manager
+     16           *              Start Manager
+     17           *
+     18           *   @{
+     19           *       @file start_manager.c
+     20           *       @brief This handles all the callbacks when inv_start_mpl() is called.
+     21           */
+     22          
+     23          
+     24          #include <string.h>
+     25          #include "log.h"
+     26          #include "start_manager.h"
+     27          
+     28          typedef inv_error_t (*inv_start_cb_func)();
+     29          struct inv_start_cb_t {
+     30              int num_cb;
+     31              inv_start_cb_func start_cb[INV_MAX_START_CB];
+     32          };
+     33          
+     34          static struct inv_start_cb_t inv_start_cb;
+     35          
+     36          /** Initilize the start manager. Typically called by inv_start_mpl();
+     37          * @return Returns INV_SUCCESS if successful or an error code if not.
+     38          */
+     39          inv_error_t inv_init_start_manager(void)
+     40          {
+     41              memset(&inv_start_cb, 0, sizeof(inv_start_cb));
+     42              return INV_SUCCESS;
+     43          }
+     44          
+     45          /** Removes a callback from start notification
+     46          * @param[in] start_cb function to remove from start notification
+     47          * @return Returns INV_SUCCESS if successful or an error code if not.
+     48          */
+     49          inv_error_t inv_unregister_mpl_start_notification(inv_error_t (*start_cb)(void))
+     50          {
+     51              int kk;
+     52          
+     53              for (kk=0; kk<inv_start_cb.num_cb; ++kk) {
+     54                  if (inv_start_cb.start_cb[kk] == start_cb) {
+     55                      // Found the match
+     56                      if (kk != (inv_start_cb.num_cb-1)) {
+     57                          memmove(&inv_start_cb.start_cb[kk],
+     58                              &inv_start_cb.start_cb[kk+1],
+     59                              (inv_start_cb.num_cb-kk-1)*sizeof(inv_start_cb_func));
+     60                      }
+     61                      inv_start_cb.num_cb--;
+     62                      return INV_SUCCESS;
+     63                  }
+     64              }
+     65              return INV_ERROR_INVALID_PARAMETER;
+     66          }
+     67          
+     68          /** Register a callback to receive when inv_start_mpl() is called.
+     69          * @param[in] start_cb Function callback that will be called when inv_start_mpl() is
+     70          *            called.
+     71          * @return Returns INV_SUCCESS if successful or an error code if not.
+     72          */
+     73          inv_error_t inv_register_mpl_start_notification(inv_error_t (*start_cb)(void))
+     74          {
+     75              if (inv_start_cb.num_cb >= INV_MAX_START_CB)
+     76                  return INV_ERROR_INVALID_PARAMETER;
+     77          
+     78              inv_start_cb.start_cb[inv_start_cb.num_cb] = start_cb;
+     79              inv_start_cb.num_cb++;
+     80              return INV_SUCCESS;
+     81          }
+     82          
+     83          /** Callback all the functions that want to be notified when inv_start_mpl() was
+     84          * called.
+     85          * @return Returns INV_SUCCESS if successful or an error code if not.
+     86          */
+     87          inv_error_t inv_execute_mpl_start_notification(void)
+     88          {
+     89              inv_error_t result,first_error;
+     90              int kk;
+     91          
+     92              first_error = INV_SUCCESS;
+     93          
+     94              for (kk = 0; kk < inv_start_cb.num_cb; ++kk) {
+     95                  result = inv_start_cb.start_cb[kk]();
+     96                  if (result && (first_error == INV_SUCCESS)) {
+     97                      first_error = result;
+     98                  }
+     99              }
+    100              return first_error;
+    101          }
+    102          
+    103          /**
+    104           * @}
+    105           */
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      16   inv_execute_mpl_start_notification
+        16   -- Indirect call
+       8   inv_init_start_manager
+         8   -> __aeabi_memset
+       0   inv_register_mpl_start_notification
+       8   inv_unregister_mpl_start_notification
+         8   -> __aeabi_memmove
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable3
+      42  inv_execute_mpl_start_notification
+      18  inv_init_start_manager
+      38  inv_register_mpl_start_notification
+      84  inv_start_cb
+      92  inv_unregister_mpl_start_notification
+
+ 
+  84 bytes in section .bss
+ 194 bytes in section .text
+ 
+ 194 bytes of CODE memory
+  84 bytes of DATA memory
+
+Errors: none
+Warnings: none

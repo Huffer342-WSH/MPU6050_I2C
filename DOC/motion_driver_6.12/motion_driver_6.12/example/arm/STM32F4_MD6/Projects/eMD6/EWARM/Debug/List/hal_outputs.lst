@@ -1,0 +1,628 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:22
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\hal_outputs.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\hal_outputs.c -D
+#        USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D MPU9250
+#        -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\hal_outputs.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\hal_outputs.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\mllite\hal_outputs.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          
+      8          /**
+      9           *   @defgroup  HAL_Outputs hal_outputs
+     10           *   @brief     Motion Library - HAL Outputs
+     11           *              Sets up common outputs for HAL
+     12           *
+     13           *   @{
+     14           *       @file  hal_outputs.c
+     15           *       @brief HAL Outputs.
+     16           */
+     17          
+     18          #include <string.h>
+     19          
+     20          #include "hal_outputs.h"
+     21          #include "log.h"
+     22          #include "ml_math_func.h"
+     23          #include "mlmath.h"
+     24          #include "start_manager.h"
+     25          #include "data_builder.h"
+     26          #include "results_holder.h"
+     27          
+     28          struct hal_output_t {
+     29              int accuracy_mag;    /**< Compass accuracy */
+     30          //    int accuracy_gyro;   /**< Gyro Accuracy */
+     31          //    int accuracy_accel;  /**< Accel Accuracy */
+     32              int accuracy_quat;   /**< quat Accuracy */
+     33          
+     34              inv_time_t nav_timestamp;
+     35              inv_time_t gam_timestamp;
+     36          //    inv_time_t accel_timestamp;
+     37              inv_time_t mag_timestamp;
+     38              long nav_quat[4];
+     39              int gyro_status;
+     40              int accel_status;
+     41              int compass_status;
+     42              int nine_axis_status;
+     43              inv_biquad_filter_t lp_filter[3];
+     44              float compass_float[3];
+     45          };
+     46          
+     47          static struct hal_output_t hal_out;
+     48          
+     49          /** Acceleration (m/s^2) in body frame.
+     50          * @param[out] values Acceleration in m/s^2 includes gravity. So while not in motion, it
+     51          *             should return a vector of magnitude near 9.81 m/s^2
+     52          * @param[out] accuracy Accuracy of the measurment, 0 is least accurate, while 3 is most accurate.
+     53          * @param[out] timestamp The timestamp for this sensor. Derived from the timestamp sent to
+     54          *             inv_build_accel().
+     55          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+     56          */
+     57          int inv_get_sensor_type_accelerometer(float *values, int8_t *accuracy,
+     58                                                 inv_time_t * timestamp)
+     59          {
+     60              int status;
+     61              /* Converts fixed point to m/s^2. Fixed point has 1g = 2^16.
+     62               * So this 9.80665 / 2^16 */
+     63          #define ACCEL_CONVERSION 0.000149637603759766f
+     64              long accel[3];
+     65              inv_get_accel_set(accel, accuracy, timestamp);
+     66              values[0] = accel[0] * ACCEL_CONVERSION;
+     67              values[1] = accel[1] * ACCEL_CONVERSION;
+     68              values[2] = accel[2] * ACCEL_CONVERSION;
+     69              if (hal_out.accel_status & INV_NEW_DATA)
+     70                  status = 1;
+     71              else
+     72                  status = 0;
+     73              return status;
+     74          }
+     75          
+     76          /** Linear Acceleration (m/s^2) in Body Frame.
+     77          * @param[out] values Linear Acceleration in body frame, length 3, (m/s^2). May show
+     78          *             accel biases while at rest.
+     79          * @param[out] accuracy Accuracy of the measurment, 0 is least accurate, while 3 is most accurate.
+     80          * @param[out] timestamp The timestamp for this sensor. Derived from the timestamp sent to
+     81          *             inv_build_accel().
+     82          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+     83          */
+     84          int inv_get_sensor_type_linear_acceleration(float *values, int8_t *accuracy,
+     85                  inv_time_t * timestamp)
+     86          {
+     87              long gravity[3], accel[3];
+     88          
+     89              inv_get_accel_set(accel, accuracy, timestamp);
+     90              inv_get_gravity(gravity);
+     91              accel[0] -= gravity[0] >> 14;
+     92              accel[1] -= gravity[1] >> 14;
+     93              accel[2] -= gravity[2] >> 14;
+     94              values[0] = accel[0] * ACCEL_CONVERSION;
+     95              values[1] = accel[1] * ACCEL_CONVERSION;
+     96              values[2] = accel[2] * ACCEL_CONVERSION;
+     97          
+     98              return 1;
+     99          }
+    100          
+    101          /** Gravity vector (m/s^2) in Body Frame.
+    102          * @param[out] values Gravity vector in body frame, length 3, (m/s^2)
+    103          * @param[out] accuracy Accuracy of the measurment, 0 is least accurate, while 3 is most accurate.
+    104          * @param[out] timestamp The timestamp for this sensor. Derived from the timestamp sent to
+    105          *             inv_build_accel().
+    106          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+    107          */
+    108          int inv_get_sensor_type_gravity(float *values, int8_t *accuracy,
+    109                                           inv_time_t * timestamp)
+    110          {
+    111              long gravity[3];
+    112          
+    113              *accuracy = (int8_t) hal_out.accuracy_quat;
+    114              *timestamp = hal_out.nav_timestamp;
+    115              inv_get_gravity(gravity);
+    116              values[0] = (gravity[0] >> 14) * ACCEL_CONVERSION;
+    117              values[1] = (gravity[1] >> 14) * ACCEL_CONVERSION;
+    118              values[2] = (gravity[2] >> 14) * ACCEL_CONVERSION;
+    119          
+    120              return 1;
+    121          }
+    122          
+    123          /* Converts fixed point to rad/sec. Fixed point has 1 dps = 2^16.
+    124           * So this is: pi / 2^16 / 180 */
+    125          #define GYRO_CONVERSION 2.66316109007924e-007f
+    126          
+    127          /** Gyroscope calibrated data (rad/s) in body frame.
+    128          * @param[out] values Rotation Rate in rad/sec.
+    129          * @param[out] accuracy Accuracy of the measurment, 0 is least accurate, while 3 is most accurate.
+    130          * @param[out] timestamp The timestamp for this sensor. Derived from the timestamp sent to
+    131          *             inv_build_gyro().
+    132          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+    133          */
+    134          int inv_get_sensor_type_gyroscope(float *values, int8_t *accuracy,
+    135                                             inv_time_t * timestamp)
+    136          {
+    137              long gyro[3];
+    138              int status;
+    139          
+    140              inv_get_gyro_set(gyro, accuracy, timestamp);
+    141              values[0] = gyro[0] * GYRO_CONVERSION;
+    142              values[1] = gyro[1] * GYRO_CONVERSION;
+    143              values[2] = gyro[2] * GYRO_CONVERSION;
+    144              if (hal_out.gyro_status & INV_NEW_DATA)
+    145                  status = 1;
+    146              else
+    147                  status = 0;
+    148              return status;
+    149          }
+    150          
+    151          /** Gyroscope raw data (rad/s) in body frame.
+    152          * @param[out] values Rotation Rate in rad/sec.
+    153          * @param[out] accuracy Accuracy of the measurment, 0 is least accurate, while 3 is most accurate.
+    154          * @param[out] timestamp The timestamp for this sensor. Derived from the timestamp sent to
+    155          *             inv_build_gyro().
+    156          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+    157          */
+    158          int inv_get_sensor_type_gyroscope_raw(float *values, int8_t *accuracy,
+    159                                             inv_time_t * timestamp)
+    160          {
+    161              long gyro[3];
+    162              int status;
+    163          
+    164              inv_get_gyro_set_raw(gyro, accuracy, timestamp);
+    165              values[0] = gyro[0] * GYRO_CONVERSION;
+    166              values[1] = gyro[1] * GYRO_CONVERSION;
+    167              values[2] = gyro[2] * GYRO_CONVERSION;
+    168              if (hal_out.gyro_status & INV_NEW_DATA)
+    169                  status = 1;
+    170              else
+    171                  status = 0;
+    172              return status;
+    173          }
+    174          
+    175          /**
+    176          * This corresponds to Sensor.TYPE_ROTATION_VECTOR.
+    177          * The rotation vector represents the orientation of the device as a combination
+    178          * of an angle and an axis, in which the device has rotated through an angle @f$\theta@f$
+    179          * around an axis {x, y, z}. <br>
+    180          * The three elements of the rotation vector are
+    181          * {x*sin(@f$\theta@f$/2), y*sin(@f$\theta@f$/2), z*sin(@f$\theta@f$/2)}, such that the magnitude of the rotation
+    182          * vector is equal to sin(@f$\theta@f$/2), and the direction of the rotation vector is
+    183          * equal to the direction of the axis of rotation.
+    184          *
+    185          * The three elements of the rotation vector are equal to the last three components of a unit quaternion
+    186          * {x*sin(@f$\theta@f$/2), y*sin(@f$\theta@f$/2), z*sin(@f$\theta@f$/2)>. The 4th element is cos(@f$\theta@f$/2).
+    187          *
+    188          * Elements of the rotation vector are unitless. The x,y and z axis are defined in the same way as the acceleration sensor.
+    189          * The reference coordinate system is defined as a direct orthonormal basis, where:
+    190          
+    191              -X is defined as the vector product Y.Z (It is tangential to the ground at the device's current location and roughly points East).
+    192              -Y is tangential to the ground at the device's current location and points towards the magnetic North Pole.
+    193              -Z points towards the sky and is perpendicular to the ground.
+    194          * @param[out] values Length 4.
+    195          * @param[out] accuracy Accuracy 0 to 3, 3 = most accurate
+    196          * @param[out] timestamp Timestamp. In (ns) for Android.
+    197          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+    198          */
+    199          int inv_get_sensor_type_rotation_vector(float *values, int8_t *accuracy,
+    200                  inv_time_t * timestamp)
+    201          {
+    202              *accuracy = (int8_t) hal_out.accuracy_quat;
+    203              *timestamp = hal_out.nav_timestamp;
+    204          
+    205              if (hal_out.nav_quat[0] >= 0) {
+    206                  values[0] = hal_out.nav_quat[1] * INV_TWO_POWER_NEG_30;
+    207                  values[1] = hal_out.nav_quat[2] * INV_TWO_POWER_NEG_30;
+    208                  values[2] = hal_out.nav_quat[3] * INV_TWO_POWER_NEG_30;
+    209                  values[3] = hal_out.nav_quat[0] * INV_TWO_POWER_NEG_30;
+    210              } else {
+    211                  values[0] = -hal_out.nav_quat[1] * INV_TWO_POWER_NEG_30;
+    212                  values[1] = -hal_out.nav_quat[2] * INV_TWO_POWER_NEG_30;
+    213                  values[2] = -hal_out.nav_quat[3] * INV_TWO_POWER_NEG_30;
+    214                  values[3] = -hal_out.nav_quat[0] * INV_TWO_POWER_NEG_30;
+    215              }
+    216              values[4] = inv_get_heading_confidence_interval();
+    217          
+    218              return hal_out.nine_axis_status;
+    219          }
+    220          
+    221          /** Compass data (uT) in body frame.
+    222          * @param[out] values Compass data in (uT), length 3. May be calibrated by having
+    223          *             biases removed and sensitivity adjusted
+    224          * @param[out] accuracy Accuracy 0 to 3, 3 = most accurate
+    225          * @param[out] timestamp Timestamp. In (ns) for Android.
+    226          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+    227          */
+    228          int inv_get_sensor_type_magnetic_field(float *values, int8_t *accuracy,
+    229                                                  inv_time_t * timestamp)
+    230          {
+    231              int status;
+    232              /* Converts fixed point to uT. Fixed point has 1 uT = 2^16.
+    233               * So this is: 1 / 2^16*/
+    234          //#define COMPASS_CONVERSION 1.52587890625e-005f
+    235              int i;
+    236          
+    237              *timestamp = hal_out.mag_timestamp;
+    238              *accuracy = (int8_t) hal_out.accuracy_mag;
+    239          
+    240              for (i=0; i<3; i++)  {
+    241                  values[i] = hal_out.compass_float[i];
+    242              }
+    243              if (hal_out.compass_status & INV_NEW_DATA)
+    244                  status = 1;
+    245              else
+    246                  status = 0;
+    247              hal_out.compass_status = 0;
+    248              return status;
+    249          }
+    250          
+    251          static void inv_get_rotation(float r[3][3])
+    252          {
+    253              long rot[9];
+    254              float conv = 1.f / (1L<<30);
+    255          
+    256              inv_quaternion_to_rotation(hal_out.nav_quat, rot);
+    257              r[0][0] = rot[0]*conv;
+    258              r[0][1] = rot[1]*conv;
+    259              r[0][2] = rot[2]*conv;
+    260              r[1][0] = rot[3]*conv;
+    261              r[1][1] = rot[4]*conv;
+    262              r[1][2] = rot[5]*conv;
+    263              r[2][0] = rot[6]*conv;
+    264              r[2][1] = rot[7]*conv;
+    265              r[2][2] = rot[8]*conv;
+    266          }
+    267          
+    268          static void google_orientation(float *g)
+    269          {
+    270              float rad2deg = (float)(180.0 / M_PI);
+    271              float R[3][3];
+    272          
+    273              inv_get_rotation(R);
+    274          
+    275              g[0] = atan2f(-R[1][0], R[0][0]) * rad2deg;
+    276              g[1] = atan2f(-R[2][1], R[2][2]) * rad2deg;
+    277              g[2] = asinf ( R[2][0])          * rad2deg;
+    278              if (g[0] < 0)
+    279                  g[0] += 360;
+    280          }
+    281          
+    282          
+    283          /** This corresponds to Sensor.TYPE_ORIENTATION. All values are angles in degrees.
+    284          * @param[out] values Length 3, Degrees.<br>
+    285          *        - values[0]: Azimuth, angle between the magnetic north direction
+    286          *         and the y-axis, around the z-axis (0 to 359). 0=North, 90=East, 180=South, 270=West<br>
+    287          *        - values[1]: Pitch, rotation around x-axis (-180 to 180), with positive values
+    288          *         when the z-axis moves toward the y-axis.<br>
+    289          *        - values[2]: Roll, rotation around y-axis (-90 to 90), with positive
+    290          *          values when the x-axis moves toward the z-axis.<br>
+    291          *
+    292          * @note  This definition is different from yaw, pitch and roll used in aviation
+    293          *        where the X axis is along the long side of the plane (tail to nose).
+    294          *        Note: This sensor type exists for legacy reasons, please use getRotationMatrix()
+    295          *        in conjunction with remapCoordinateSystem() and getOrientation() to compute
+    296          *        these values instead.
+    297          *        Important note: For historical reasons the roll angle is positive in the
+    298          *        clockwise direction (mathematically speaking, it should be positive in
+    299          *        the counter-clockwise direction).
+    300          * @param[out] accuracy Accuracy of the measurment, 0 is least accurate, while 3 is most accurate.
+    301          * @param[out] timestamp The timestamp for this sensor.
+    302          * @return     Returns 1 if the data was updated or 0 if it was not updated.
+    303          */
+    304          int inv_get_sensor_type_orientation(float *values, int8_t *accuracy,
+    305                                               inv_time_t * timestamp)
+    306          {
+    307              *accuracy = (int8_t) hal_out.accuracy_quat;
+    308              *timestamp = hal_out.nav_timestamp;
+    309          
+    310              google_orientation(values);
+    311          
+    312              return hal_out.nine_axis_status;
+    313          }
+    314          
+    315          /** Main callback to generate HAL outputs. Typically not called by library users.
+    316          * @param[in] sensor_cal Input variable to take sensor data whenever there is new
+    317          * sensor data.
+    318          * @return Returns INV_SUCCESS if successful or an error code if not.
+    319          */
+    320          inv_error_t inv_generate_hal_outputs(struct inv_sensor_cal_t *sensor_cal)
+    321          {
+    322              int use_sensor = 0;
+    323              long sr = 1000;
+    324              long compass[3];
+    325              int8_t accuracy;
+    326              int i;
+    327              (void) sensor_cal;
+    328          
+    329              inv_get_quaternion_set(hal_out.nav_quat, &hal_out.accuracy_quat,
+    330                                     &hal_out.nav_timestamp);
+    331              hal_out.gyro_status = sensor_cal->gyro.status;
+    332              hal_out.accel_status = sensor_cal->accel.status;
+    333              hal_out.compass_status = sensor_cal->compass.status;
+    334          
+    335              // Find the highest sample rate and tie generating 9-axis to that one.
+    336              if (sensor_cal->gyro.status & INV_SENSOR_ON) {
+    337                  sr = sensor_cal->gyro.sample_rate_ms;
+    338                  use_sensor = 0;
+    339              }
+    340              if ((sensor_cal->accel.status & INV_SENSOR_ON) && (sr > sensor_cal->accel.sample_rate_ms)) {
+    341                  sr = sensor_cal->accel.sample_rate_ms;
+    342                  use_sensor = 1;
+    343              }
+    344              if ((sensor_cal->compass.status & INV_SENSOR_ON) && (sr > sensor_cal->compass.sample_rate_ms)) {
+    345                  sr = sensor_cal->compass.sample_rate_ms;
+    346                  use_sensor = 2;
+    347              }
+    348              if ((sensor_cal->quat.status & INV_SENSOR_ON) && (sr > sensor_cal->quat.sample_rate_ms)) {
+    349                  sr = sensor_cal->quat.sample_rate_ms;
+    350                  use_sensor = 3;
+    351              }
+    352          
+    353              // Only output 9-axis if all 9 sensors are on.
+    354              if (sensor_cal->quat.status & INV_SENSOR_ON) {
+    355                  // If quaternion sensor is on, gyros are not required as quaternion already has that part
+    356                  if ((sensor_cal->accel.status & sensor_cal->compass.status & INV_SENSOR_ON) == 0) {
+    357                      use_sensor = -1;
+    358                  }
+    359              } else {
+    360                  if ((sensor_cal->gyro.status & sensor_cal->accel.status & sensor_cal->compass.status & INV_SENSOR_ON) == 0) {
+    361                      use_sensor = -1;
+    362                  }
+    363              }
+    364          
+    365              switch (use_sensor) {
+    366              case 0:
+    367                  hal_out.nine_axis_status = (sensor_cal->gyro.status & INV_NEW_DATA) ? 1 : 0;
+    368                  hal_out.nav_timestamp = sensor_cal->gyro.timestamp;
+    369                  break;
+    370              case 1:
+    371                  hal_out.nine_axis_status = (sensor_cal->accel.status & INV_NEW_DATA) ? 1 : 0;
+    372                  hal_out.nav_timestamp = sensor_cal->accel.timestamp;
+    373                  break;
+    374              case 2:
+    375                  hal_out.nine_axis_status = (sensor_cal->compass.status & INV_NEW_DATA) ? 1 : 0;
+    376                  hal_out.nav_timestamp = sensor_cal->compass.timestamp;
+    377                  break;
+    378              case 3:
+    379                  hal_out.nine_axis_status = (sensor_cal->quat.status & INV_NEW_DATA) ? 1 : 0;
+    380                  hal_out.nav_timestamp = sensor_cal->quat.timestamp;
+    381                  break;
+    382              default:
+    383                  hal_out.nine_axis_status = 0; // Don't output quaternion related info
+    384                  break;
+    385              }
+    386          
+    387              /* Converts fixed point to uT. Fixed point has 1 uT = 2^16.
+    388               * So this is: 1 / 2^16*/
+    389              #define COMPASS_CONVERSION 1.52587890625e-005f
+    390          
+    391              inv_get_compass_set(compass, &accuracy, &(hal_out.mag_timestamp) );
+    392              hal_out.accuracy_mag = (int ) accuracy;
+    393          
+    394              for (i=0; i<3; i++) {
+    395                  if ((sensor_cal->compass.status & (INV_NEW_DATA | INV_CONTIGUOUS)) ==
+    396                                                                       INV_NEW_DATA )  {
+    397                      // set the state variables to match output with input
+    398                      inv_calc_state_to_match_output(&hal_out.lp_filter[i], (float ) compass[i]);
+    399                  }
+    400          
+    401                  if ((sensor_cal->compass.status & (INV_NEW_DATA | INV_RAW_DATA)) ==
+    402                                                   (INV_NEW_DATA | INV_RAW_DATA)   )  {
+    403          
+    404                      hal_out.compass_float[i] = inv_biquad_filter_process(&hal_out.lp_filter[i],
+    405                                                     (float ) compass[i]) * COMPASS_CONVERSION;
+    406          
+    407                  } else if ((sensor_cal->compass.status & INV_NEW_DATA) == INV_NEW_DATA )  {
+    408                      hal_out.compass_float[i] = (float ) compass[i] * COMPASS_CONVERSION;
+    409                  }
+    410          
+    411              }
+    412              return INV_SUCCESS;
+    413          }
+    414          
+    415          /** Turns off generation of HAL outputs.
+    416          * @return Returns INV_SUCCESS if successful or an error code if not.
+    417           */
+    418          inv_error_t inv_stop_hal_outputs(void)
+    419          {
+    420              inv_error_t result;
+    421              result = inv_unregister_data_cb(inv_generate_hal_outputs);
+    422              return result;
+    423          }
+    424          
+    425          /** Turns on generation of HAL outputs. This should be called after inv_stop_hal_outputs()
+    426          * to turn generation of HAL outputs back on. It is automatically called by inv_enable_hal_outputs().
+    427          * @return Returns INV_SUCCESS if successful or an error code if not.
+    428          */
+    429          inv_error_t inv_start_hal_outputs(void)
+    430          {
+    431              inv_error_t result;
+    432              result =
+    433                  inv_register_data_cb(inv_generate_hal_outputs,
+    434                                       INV_PRIORITY_HAL_OUTPUTS,
+    435                                       INV_GYRO_NEW | INV_ACCEL_NEW | INV_MAG_NEW);
+    436              return result;
+    437          }
+    438          /* file name: lowPassFilterCoeff_1_6.c */
+    439          float compass_low_pass_filter_coeff[5] =
+    440          {+2.000000000000f, +1.000000000000f, -1.279632424998f, +0.477592250073f, +0.049489956269f};
+    441          
+    442          /** Initializes hal outputs class. This is called automatically by the
+    443          * enable function. It may be called any time the feature is enabled, but
+    444          * is typically not needed to be called by outside callers.
+    445          * @return Returns INV_SUCCESS if successful or an error code if not.
+    446          */
+    447          inv_error_t inv_init_hal_outputs(void)
+    448          {
+    449              int i;
+    450              memset(&hal_out, 0, sizeof(hal_out));
+    451              for (i=0; i<3; i++)  {
+    452                  inv_init_biquad_filter(&hal_out.lp_filter[i], compass_low_pass_filter_coeff);
+    453              }
+    454          
+    455              return INV_SUCCESS;
+    456          }
+    457          
+    458          /** Turns on creation and storage of HAL type results.
+    459          * @return Returns INV_SUCCESS if successful or an error code if not.
+    460          */
+    461          inv_error_t inv_enable_hal_outputs(void)
+    462          {
+    463              inv_error_t result;
+    464          
+    465          	// don't need to check the result for inv_init_hal_outputs
+    466          	// since it's always INV_SUCCESS
+    467          	inv_init_hal_outputs();
+    468          
+    469              result = inv_register_mpl_start_notification(inv_start_hal_outputs);
+    470              return result;
+    471          }
+    472          
+    473          /** Turns off creation and storage of HAL type results.
+    474          */
+    475          inv_error_t inv_disable_hal_outputs(void)
+    476          {
+    477              inv_error_t result;
+    478          
+    479              inv_stop_hal_outputs(); // Ignore error if we have already stopped this
+    480              result = inv_unregister_mpl_start_notification(inv_start_hal_outputs);
+    481              return result;
+    482          }
+    483          
+    484          /**
+    485           * @}
+    486           */
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      56   google_orientation
+        56   -> asinf
+        56   -> atan2f
+        56   -> inv_get_rotation
+       8   inv_disable_hal_outputs
+         8   -> inv_stop_hal_outputs
+         8   -> inv_unregister_mpl_start_notification
+       8   inv_enable_hal_outputs
+         8   -> inv_init_hal_outputs
+         8   -> inv_register_mpl_start_notification
+      32   inv_generate_hal_outputs
+        32   -> inv_biquad_filter_process
+        32   -> inv_calc_state_to_match_output
+        32   -> inv_get_compass_set
+        32   -> inv_get_quaternion_set
+      56   inv_get_rotation
+        56   -> inv_quaternion_to_rotation
+      24   inv_get_sensor_type_accelerometer
+        24   -> inv_get_accel_set
+      24   inv_get_sensor_type_gravity
+        24   -> inv_get_gravity
+      24   inv_get_sensor_type_gyroscope
+        24   -> inv_get_gyro_set
+      24   inv_get_sensor_type_gyroscope_raw
+        24   -> inv_get_gyro_set_raw
+      32   inv_get_sensor_type_linear_acceleration
+        32   -> inv_get_accel_set
+        32   -> inv_get_gravity
+       0   inv_get_sensor_type_magnetic_field
+       8   inv_get_sensor_type_orientation
+         8   -> google_orientation
+       8   inv_get_sensor_type_rotation_vector
+         8   -> inv_get_heading_confidence_interval
+       8   inv_init_hal_outputs
+         8   -> __aeabi_memset
+         8   -> inv_init_biquad_filter
+       8   inv_start_hal_outputs
+         8   -> inv_register_data_cb
+       8   inv_stop_hal_outputs
+         8   -> inv_unregister_data_cb
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable15
+       4  ??DataTable15_1
+       4  ??DataTable15_10
+       4  ??DataTable15_2
+       4  ??DataTable15_3
+       4  ??DataTable15_4
+       4  ??DataTable15_5
+       4  ??DataTable15_6
+       4  ??DataTable15_7
+       4  ??DataTable15_8
+       4  ??DataTable15_9
+       4  ??DataTable6
+       4  ??DataTable9
+       4  ??DataTable9_1
+      20  compass_low_pass_filter_coeff
+     122  google_orientation
+     196  hal_out
+      14  inv_disable_hal_outputs
+      14  inv_enable_hal_outputs
+     468  inv_generate_hal_outputs
+     176  inv_get_rotation
+      94  inv_get_sensor_type_accelerometer
+     106  inv_get_sensor_type_gravity
+      94  inv_get_sensor_type_gyroscope
+      94  inv_get_sensor_type_gyroscope_raw
+     114  inv_get_sensor_type_linear_acceleration
+      70  inv_get_sensor_type_magnetic_field
+      24  inv_get_sensor_type_orientation
+     192  inv_get_sensor_type_rotation_vector
+      44  inv_init_hal_outputs
+      16  inv_start_hal_outputs
+      10  inv_stop_hal_outputs
+
+ 
+   196 bytes in section .bss
+    20 bytes in section .data
+ 1 708 bytes in section .text
+ 
+ 1 708 bytes of CODE memory
+   216 bytes of DATA memory
+
+Errors: none
+Warnings: none

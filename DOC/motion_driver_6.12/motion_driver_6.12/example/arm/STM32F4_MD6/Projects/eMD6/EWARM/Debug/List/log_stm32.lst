@@ -1,0 +1,298 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:25
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\driver\stm32L\log_stm32.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\driver\stm32L\log_stm32.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\log_stm32.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\log_stm32.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\driver\stm32L\log_stm32.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2010 InvenSense Corporation, All Rights Reserved.
+      4           $
+      5           */
+      6          /*******************************************************************************
+      7           * $Id: $
+      8           *******************************************************************************/
+      9          
+     10          /**
+     11           *  @defgroup MSP430_System_Layer MSP430 System Layer
+     12           *  @brief  MSP430 System Layer APIs.
+     13           *          To interface with any platform, eMPL needs access to various
+     14           *          system layer functions.
+     15           *
+     16           *  @{
+     17           *      @file   log_msp430.c
+     18           *      @brief  Logging facility for the TI MSP430.
+     19           */
+     20          
+     21          #include <stdio.h>
+     22          #include <stdint.h>
+     23          #include <stdlib.h>
+     24          #include <string.h>
+     25          #include <stdarg.h>
+     26          
+     27          #include "packet.h"
+     28          #include "log.h"
+     29          #include "stm32f4xx.h"
+     30          #include "uart.h"
+     31          
+     32          #define BUF_SIZE        (256)
+     33          #define PACKET_LENGTH   (23)
+     34          
+     35          #define PACKET_DEBUG    (1)
+     36          #define PACKET_QUAT     (2)
+     37          #define PACKET_DATA     (3)
+     38          
+     39          /**
+     40           *  @brief      Prints a variable argument log message.
+     41           *  USB output will be formatted as follows:\n
+     42           *  packet[0]       = $\n
+     43           *  packet[1]       = packet type (1: debug, 2: quat, 3: data)\n
+     44           *  packet[2]       = \n for debug packets: log priority\n
+     45           *                    for quaternion packets: unused\n
+     46           *                    for data packets: packet content (accel, gyro, etc)\n
+     47           *  packet[3-20]    = data\n
+     48           *  packet[21]      = \\r\n
+     49           *  packet[22]      = \\n
+     50           *  @param[in]  priority    Log priority (based on Android).
+     51           *  @param[in]  tag         File specific string.
+     52           *  @param[in]  fmt         String of text with optional format tags.
+     53           *
+     54           *  @return     0 if successful.
+     55           */
+     56          int _MLPrintLog (int priority, const char* tag, const char* fmt, ...)
+     57          {
+     58              va_list args;
+     59              int length, ii, i;
+     60              char buf[BUF_SIZE], out[PACKET_LENGTH], this_length;
+     61          
+     62              /* This can be modified to exit for unsupported priorities. */
+     63              switch (priority) {
+     64              case MPL_LOG_UNKNOWN:
+     65              case MPL_LOG_DEFAULT:
+     66              case MPL_LOG_VERBOSE:
+     67              case MPL_LOG_DEBUG:
+     68              case MPL_LOG_INFO:
+     69              case MPL_LOG_WARN:
+     70              case MPL_LOG_ERROR:
+     71              case MPL_LOG_SILENT:
+     72                  break;
+     73              default:
+     74                  return 0;
+     75              }
+     76          
+     77              va_start(args, fmt);
+     78          
+     79              length = vsprintf(buf, fmt, args);
+     80              if (length <= 0) {
+     81                  va_end(args);
+     82                  return length;
+     83              }
+     84          
+     85              memset(out, 0, PACKET_LENGTH);
+     86              out[0] = '$';
+     87              out[1] = PACKET_DEBUG;
+     88              out[2] = priority;
+     89              out[21] = '\r';
+     90              out[22] = '\n';
+     91              for (ii = 0; ii < length; ii += (PACKET_LENGTH-5)) {
+     92          #define min(a,b) ((a < b) ? a : b)
+     93                  this_length = min(length-ii, PACKET_LENGTH-5);
+     94                  memset(out+3, 0, 18);
+     95                  memcpy(out+3, buf+ii, this_length);
+     96                  for (i=0; i<PACKET_LENGTH; i++) {
+     97                    fputc(out[i]);
+     98                  }
+     99              }
+    100              
+    101                      
+    102              va_end(args);
+    103          
+    104              return 0;
+    105          }
+    106          
+    107          void eMPL_send_quat(long *quat)
+    108          {
+    109              char out[PACKET_LENGTH];
+    110              int i;
+    111              if (!quat)
+    112                  return;
+    113              memset(out, 0, PACKET_LENGTH);
+    114              out[0] = '$';
+    115              out[1] = PACKET_QUAT;
+    116              out[3] = (char)(quat[0] >> 24);
+    117              out[4] = (char)(quat[0] >> 16);
+    118              out[5] = (char)(quat[0] >> 8);
+    119              out[6] = (char)quat[0];
+    120              out[7] = (char)(quat[1] >> 24);
+    121              out[8] = (char)(quat[1] >> 16);
+    122              out[9] = (char)(quat[1] >> 8);
+    123              out[10] = (char)quat[1];
+    124              out[11] = (char)(quat[2] >> 24);
+    125              out[12] = (char)(quat[2] >> 16);
+    126              out[13] = (char)(quat[2] >> 8);
+    127              out[14] = (char)quat[2];
+    128              out[15] = (char)(quat[3] >> 24);
+    129              out[16] = (char)(quat[3] >> 16);
+    130              out[17] = (char)(quat[3] >> 8);
+    131              out[18] = (char)quat[3];
+    132              out[21] = '\r';
+    133              out[22] = '\n';
+    134              
+    135              for (i=0; i<PACKET_LENGTH; i++) {
+    136                fputc(out[i]);
+    137              }
+    138          }
+    139          
+    140          void eMPL_send_data(unsigned char type, long *data)
+    141          {
+    142              char out[PACKET_LENGTH];
+    143              int i;
+    144              if (!data)
+    145                  return;
+    146              memset(out, 0, PACKET_LENGTH);
+    147              out[0] = '$';
+    148              out[1] = PACKET_DATA;
+    149              out[2] = type;
+    150              out[21] = '\r';
+    151              out[22] = '\n';
+    152              switch (type) {
+    153              /* Two bytes per-element. */
+    154              case PACKET_DATA_ROT:
+    155                  out[3] = (char)(data[0] >> 24);
+    156                  out[4] = (char)(data[0] >> 16);
+    157                  out[5] = (char)(data[1] >> 24);
+    158                  out[6] = (char)(data[1] >> 16);
+    159                  out[7] = (char)(data[2] >> 24);
+    160                  out[8] = (char)(data[2] >> 16);
+    161                  out[9] = (char)(data[3] >> 24);
+    162                  out[10] = (char)(data[3] >> 16);
+    163                  out[11] = (char)(data[4] >> 24);
+    164                  out[12] = (char)(data[4] >> 16);
+    165                  out[13] = (char)(data[5] >> 24);
+    166                  out[14] = (char)(data[5] >> 16);
+    167                  out[15] = (char)(data[6] >> 24);
+    168                  out[16] = (char)(data[6] >> 16);
+    169                  out[17] = (char)(data[7] >> 24);
+    170                  out[18] = (char)(data[7] >> 16);
+    171                  out[19] = (char)(data[8] >> 24);
+    172                  out[20] = (char)(data[8] >> 16);
+    173                  break;
+    174              /* Four bytes per-element. */
+    175              /* Four elements. */
+    176              case PACKET_DATA_QUAT:
+    177                  out[15] = (char)(data[3] >> 24);
+    178                  out[16] = (char)(data[3] >> 16);
+    179                  out[17] = (char)(data[3] >> 8);
+    180                  out[18] = (char)data[3];
+    181              /* Three elements. */
+    182              case PACKET_DATA_ACCEL:
+    183              case PACKET_DATA_GYRO:
+    184              case PACKET_DATA_COMPASS:
+    185              case PACKET_DATA_EULER:
+    186                  out[3] = (char)(data[0] >> 24);
+    187                  out[4] = (char)(data[0] >> 16);
+    188                  out[5] = (char)(data[0] >> 8);
+    189                  out[6] = (char)data[0];
+    190                  out[7] = (char)(data[1] >> 24);
+    191                  out[8] = (char)(data[1] >> 16);
+    192                  out[9] = (char)(data[1] >> 8);
+    193                  out[10] = (char)data[1];
+    194                  out[11] = (char)(data[2] >> 24);
+    195                  out[12] = (char)(data[2] >> 16);
+    196                  out[13] = (char)(data[2] >> 8);
+    197                  out[14] = (char)data[2];
+    198                  break;
+    199              case PACKET_DATA_HEADING:
+    200                  out[3] = (char)(data[0] >> 24);
+    201                  out[4] = (char)(data[0] >> 16);
+    202                  out[5] = (char)(data[0] >> 8);
+    203                  out[6] = (char)data[0];
+    204                  break;
+    205              default:
+    206                  return;
+    207              }
+    208              for (i=0; i<PACKET_LENGTH; i++) {
+    209                fputc(out[i]);
+    210              }
+    211          }
+    212          
+    213          /**
+    214           * @}
+    215          **/
+    216          
+    217          
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+     304   _MLPrintLog
+       304   -> __aeabi_memcpy
+       304   -> __aeabi_memset
+       304   -> fputc
+       304   -> vsprintf
+      40   eMPL_send_data
+        40   -> __aeabi_memset
+        40   -> fputc
+      40   eMPL_send_quat
+        40   -> __aeabi_memset
+        40   -> fputc
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+     166  _MLPrintLog
+     404  eMPL_send_data
+     188  eMPL_send_quat
+
+ 
+ 758 bytes in section .text
+ 
+ 758 bytes of CODE memory
+
+Errors: none
+Warnings: none

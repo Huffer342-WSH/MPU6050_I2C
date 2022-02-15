@@ -1,0 +1,542 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:23
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\Peripheral\src\i2c.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\Peripheral\src\i2c.c -D
+#        USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D MPU9250
+#        -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\i2c.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\i2c.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\Peripheral\src\i2c.c
+      1          /*******************************************************************************
+      2          File    : i2c.c
+      3          Purpose : I2c 3 to communicate with the sensors
+      4          Author  : 
+      5          ********************************** Includes ***********************************/
+      6          #include <stdio.h>
+      7          #include "stm32f4xx.h"
+      8          #include "i2c.h"
+      9          #include "stm32f4xx.h"
+     10          #include "stm32f4xx_gpio.h" 
+     11          #include "stm32f4xx_i2c.h" 
+     12          #include "stm32f4xx_rcc.h"
+     13          #include "board-st_discovery.h"
+     14          
+     15          /********************************* Defines ************************************/
+     16          
+     17          #define Delay mdelay
+     18          
+     19           
+     20          #define I2Cx_FLAG_TIMEOUT             ((uint32_t) 900) //0x1100
+     21          #define I2Cx_LONG_TIMEOUT             ((uint32_t) (300 * I2Cx_FLAG_TIMEOUT)) //was300
+     22           
+     23          
+     24          #define SENSORS_I2C_SCL_GPIO_PORT         GPIOB
+     25          #define SENSORS_I2C_SCL_GPIO_CLK          RCC_AHB1Periph_GPIOB
+     26          #define SENSORS_I2C_SCL_GPIO_PIN          GPIO_Pin_10
+     27          #define SENSORS_I2C_SCL_GPIO_PINSOURCE    GPIO_PinSource10
+     28           
+     29          #define SENSORS_I2C_SDA_GPIO_PORT         GPIOB
+     30          #define SENSORS_I2C_SDA_GPIO_CLK          RCC_AHB1Periph_GPIOB
+     31          #define SENSORS_I2C_SDA_GPIO_PIN          GPIO_Pin_11
+     32          #define SENSORS_I2C_SDA_GPIO_PINSOURCE    GPIO_PinSource11
+     33          
+     34          #define SENSORS_I2C_RCC_CLK               RCC_APB1Periph_I2C2
+     35          #define SENSORS_I2C_AF                    GPIO_AF_I2C2
+     36          
+     37          
+     38          #define WAIT_FOR_FLAG(flag, value, timeout, errorcode)  I2CTimeout = timeout;\
+     39                    while(I2C_GetFlagStatus(SENSORS_I2C, flag) != value) {\
+     40                      if((I2CTimeout--) == 0) return I2Cx_TIMEOUT_UserCallback(errorcode); \
+     41                    }\
+     42            
+     43          #define CLEAR_ADDR_BIT      I2C_ReadRegister(SENSORS_I2C, I2C_Register_SR1);\
+     44                                      I2C_ReadRegister(SENSORS_I2C, I2C_Register_SR2);\
+     45                                         
+     46          /********************************* Globals ************************************/
+     47          
+     48          /********************************* Prototypes *********************************/
+     49          unsigned long ST_Sensors_I2C_WriteRegister(unsigned char Address, unsigned char RegisterAddr, unsigned short RegisterLen, const unsigned char *RegisterValue);
+     50          unsigned long ST_Sensors_I2C_ReadRegister(unsigned char Address, unsigned char RegisterAddr, unsigned short RegisterLen, unsigned char *RegisterValue);
+     51          /*******************************  Function ************************************/
+     52          
+     53          void I2cMaster_Init(void)
+     54          {
+     55            GPIO_InitTypeDef GPIO_InitStructure;
+     56            I2C_InitTypeDef I2C_InitStructure;
+     57          
+     58              /* Enable I2Cx clock */
+     59            RCC_APB1PeriphClockCmd(SENSORS_I2C_RCC_CLK, ENABLE);
+     60          
+     61            /* Enable I2C GPIO clock */
+     62            RCC_AHB1PeriphClockCmd(SENSORS_I2C_SCL_GPIO_CLK | SENSORS_I2C_SDA_GPIO_CLK, ENABLE);
+     63          
+     64            /* Configure I2Cx pin: SCL ----------------------------------------*/
+     65            GPIO_InitStructure.GPIO_Pin =  SENSORS_I2C_SCL_GPIO_PIN; 
+     66            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+     67            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+     68            GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+     69            GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+     70          
+     71            /* Connect pins to Periph */
+     72            GPIO_PinAFConfig(SENSORS_I2C_SCL_GPIO_PORT, SENSORS_I2C_SCL_GPIO_PINSOURCE, SENSORS_I2C_AF);  
+     73            GPIO_Init(SENSORS_I2C_SCL_GPIO_PORT, &GPIO_InitStructure);
+     74          
+     75            /* Configure I2Cx pin: SDA ----------------------------------------*/
+     76            GPIO_InitStructure.GPIO_Pin = SENSORS_I2C_SDA_GPIO_PIN; 
+     77          
+     78            /* Connect pins to Periph */
+     79            GPIO_PinAFConfig(SENSORS_I2C_SDA_GPIO_PORT, SENSORS_I2C_SDA_GPIO_PINSOURCE, SENSORS_I2C_AF);  
+     80            GPIO_Init(SENSORS_I2C_SDA_GPIO_PORT, &GPIO_InitStructure);  
+     81            
+     82            I2C_DeInit(SENSORS_I2C);
+     83            I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+     84            I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
+     85            I2C_InitStructure.I2C_OwnAddress1 = I2C_OWN_ADDRESS;
+     86            I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
+     87            I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+     88            I2C_InitStructure.I2C_ClockSpeed = I2C_SPEED;
+     89              
+     90            /* Enable the I2C peripheral */
+     91            I2C_Cmd(SENSORS_I2C, ENABLE);  
+     92              
+     93            /* Initialize the I2C peripheral */
+     94            I2C_Init(SENSORS_I2C, &I2C_InitStructure);
+     95            
+     96            return;
+     97          }
+     98          
+     99          /**
+    100            * @brief  Basic management of the timeout situation.
+    101            * @param  None.
+    102            * @retval None.
+    103            */
+    104          static uint32_t I2Cx_TIMEOUT_UserCallback(char value)
+    105          {
+    106            
+    107            /* The following code allows I2C error recovery and return to normal communication
+    108               if the error source doesn’t still exist (ie. hardware issue..) */
+    109            I2C_InitTypeDef I2C_InitStructure;
+    110            
+    111            I2C_GenerateSTOP(SENSORS_I2C, ENABLE);
+    112            I2C_SoftwareResetCmd(SENSORS_I2C, ENABLE);
+    113            I2C_SoftwareResetCmd(SENSORS_I2C, DISABLE);
+    114            
+    115             I2C_DeInit(SENSORS_I2C);
+    116            I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
+    117            I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
+    118            I2C_InitStructure.I2C_OwnAddress1 = I2C_OWN_ADDRESS;
+    119            I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
+    120            I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+    121            I2C_InitStructure.I2C_ClockSpeed = I2C_SPEED;
+    122              
+    123            /* Enable the I2C peripheral */
+    124            I2C_Cmd(SENSORS_I2C, ENABLE);  
+    125              
+    126            /* Initialize the I2C peripheral */
+    127            I2C_Init(SENSORS_I2C, &I2C_InitStructure);
+    128          
+    129            return 1;
+    130          }
+    131          
+    132          
+    133          int Sensors_I2C_WriteRegister(unsigned char slave_addr,
+    134                                                  unsigned char reg_addr,
+    135                                                  unsigned short len, 
+    136                                                  const unsigned char *data_ptr)
+    137          {
+    138            char retries=0;
+    139            int ret = 0;
+    140            unsigned short retry_in_mlsec = Get_I2C_Retry();
+    141                                        
+    142          tryWriteAgain:  
+    143            ret = 0;
+    144            ret = ST_Sensors_I2C_WriteRegister( slave_addr, reg_addr, len, data_ptr); 
+    145          
+    146            if(ret && retry_in_mlsec)
+    147            {
+    148              if( retries++ > 4 )
+    149                  return ret;
+    150              
+    151              mdelay(retry_in_mlsec);
+    152              goto tryWriteAgain;
+    153            }
+    154            return ret;  
+    155          }
+    156          
+    157          int Sensors_I2C_ReadRegister(unsigned char slave_addr,
+    158                                                 unsigned char reg_addr,
+    159                                                 unsigned short len, 
+    160                                                 unsigned char *data_ptr)
+    161          {
+    162            char retries=0;
+    163            int ret = 0;
+    164            unsigned short retry_in_mlsec = Get_I2C_Retry();
+    165            
+    166          tryReadAgain:  
+    167            ret = 0;
+    168            ret = ST_Sensors_I2C_ReadRegister( slave_addr, reg_addr, len, data_ptr);
+    169          
+    170            if(ret && retry_in_mlsec)
+    171            {
+    172              if( retries++ > 4 )
+    173                  return ret;
+    174              
+    175              mdelay(retry_in_mlsec);
+    176              goto tryReadAgain;
+    177            } 
+    178            return ret;
+    179          }
+    180          
+    181          
+    182          /**
+    183            * @brief  Writes a Byte to a given register to the sensors through the 
+    184                      control interface (I2C)
+    185            * @param  RegisterAddr: The address (location) of the register to be written.
+    186            * @param  RegisterValue: the Byte value to be written into destination register.
+    187            * @retval 0 if correct communication, else wrong communication
+    188            */
+    189          unsigned long ST_Sensors_I2C_WriteRegister(unsigned char Address, unsigned char RegisterAddr, unsigned short RegisterLen, const unsigned char *RegisterValue)
+    190          {
+    191            uint32_t  result = 0;
+    192            uint32_t  i = 0; // i = RegisterLen;
+    193            __IO uint32_t  I2CTimeout = I2Cx_LONG_TIMEOUT;
+    194            
+    195          //  RegisterValue = RegisterValue + (RegisterLen - 1);
+    196          
+    197            /* Wait for the busy flag to be cleared */
+    198            WAIT_FOR_FLAG (I2C_FLAG_BUSY, RESET, I2Cx_LONG_TIMEOUT, 1);
+    199            
+    200            /* Start the config sequence */
+    201            I2C_GenerateSTART(SENSORS_I2C, ENABLE);
+    202          
+    203            /* Wait for the start bit to be set */
+    204            WAIT_FOR_FLAG (I2C_FLAG_SB, SET, I2Cx_FLAG_TIMEOUT, 2);
+    205          
+    206            /* Transmit the slave address and enable writing operation */
+    207            I2C_Send7bitAddress(SENSORS_I2C, (Address<<1), I2C_Direction_Transmitter);
+    208            
+    209            /* Wait for address bit to be set */
+    210            WAIT_FOR_FLAG (I2C_FLAG_ADDR, SET, I2Cx_FLAG_TIMEOUT, 3);
+    211            
+    212            /* clear the ADDR interrupt bit  - this is done by reading SR1 and SR2*/
+    213            CLEAR_ADDR_BIT
+    214            
+    215            /* Wait for address bit to be set */
+    216            WAIT_FOR_FLAG (I2C_FLAG_TXE, SET, I2Cx_FLAG_TIMEOUT, 4);
+    217          
+    218            /* Transmit the first address for write operation */
+    219            I2C_SendData(SENSORS_I2C, RegisterAddr);
+    220          
+    221          //  while (i--)
+    222          //  {
+    223          //    /* Wait for address bit to be set */
+    224          //    WAIT_FOR_FLAG (I2C_FLAG_TXE, SET, I2Cx_FLAG_TIMEOUT, 5);
+    225          //  
+    226          //    /* Prepare the register value to be sent */
+    227          //    I2C_SendData(SENSORS_I2C, *RegisterValue--);
+    228          //  }
+    229            
+    230            for(i=0; i<(RegisterLen); i++)
+    231            {
+    232              /* Wait for address bit to be set */
+    233              WAIT_FOR_FLAG (I2C_FLAG_TXE, SET, I2Cx_FLAG_TIMEOUT, 5);
+    234            
+    235              /* Prepare the register value to be sent */
+    236              I2C_SendData(SENSORS_I2C, RegisterValue[i]);
+    237            }  
+    238             
+    239            /* Wait for address bit to be set */
+    240            WAIT_FOR_FLAG (I2C_FLAG_BTF, SET, I2Cx_FLAG_TIMEOUT, 6);
+    241            
+    242            /* End the configuration sequence */
+    243            I2C_GenerateSTOP(SENSORS_I2C, ENABLE);  
+    244            
+    245            /* Return the verifying value: 0 (Passed) or 1 (Failed) */
+    246            return result;  
+    247          }
+    248          
+    249          unsigned long ST_Sensors_I2C_ReadRegister(unsigned char Address, unsigned char RegisterAddr, unsigned short RegisterLen, unsigned char *RegisterValue)
+    250          {
+    251            uint32_t i=0, result = 0;
+    252            __IO uint32_t  I2CTimeout = I2Cx_LONG_TIMEOUT;
+    253             
+    254            /* Wait for the busy flag to be cleared */
+    255            WAIT_FOR_FLAG (I2C_FLAG_BUSY, RESET, I2Cx_LONG_TIMEOUT, 7);
+    256            
+    257            /* Start the config sequence */
+    258            I2C_GenerateSTART(SENSORS_I2C, ENABLE);
+    259          
+    260            /* Wait for the start bit to be set */
+    261            WAIT_FOR_FLAG (I2C_FLAG_SB, SET, I2Cx_FLAG_TIMEOUT, 8);
+    262            
+    263            /* Transmit the slave address and enable writing operation */
+    264            I2C_Send7bitAddress(SENSORS_I2C, (Address<<1), I2C_Direction_Transmitter);
+    265          
+    266            /* Wait for the start bit to be set */
+    267            WAIT_FOR_FLAG (I2C_FLAG_ADDR, SET, I2Cx_FLAG_TIMEOUT, 9);
+    268          
+    269            /* clear the ADDR interrupt bit  - this is done by reading SR1 and SR2*/
+    270            CLEAR_ADDR_BIT;
+    271            
+    272            /* Wait for address bit to be set */
+    273            WAIT_FOR_FLAG (I2C_FLAG_TXE, SET, I2Cx_FLAG_TIMEOUT, 10);
+    274            
+    275            /* Transmit the register address to be read */
+    276            I2C_SendData(SENSORS_I2C, RegisterAddr);
+    277            
+    278            /* Wait for address bit to be set */
+    279            WAIT_FOR_FLAG (I2C_FLAG_TXE, SET, I2Cx_FLAG_TIMEOUT, 11);  
+    280          
+    281            /*!< Send START condition a second time */  
+    282            I2C_GenerateSTART(SENSORS_I2C, ENABLE);
+    283            
+    284            /* Wait for the start bit to be set */
+    285            WAIT_FOR_FLAG (I2C_FLAG_SB, SET, I2Cx_FLAG_TIMEOUT, 12);
+    286            
+    287            /*!< Send address for read */
+    288            I2C_Send7bitAddress(SENSORS_I2C, (Address<<1), I2C_Direction_Receiver);  
+    289            
+    290            /* Wait for the start bit to be set */
+    291            WAIT_FOR_FLAG (I2C_FLAG_ADDR, SET, I2Cx_FLAG_TIMEOUT, 13);
+    292            
+    293            if (RegisterLen == 1) 
+    294            {
+    295              /*!< Disable Acknowledgment */
+    296              I2C_AcknowledgeConfig(SENSORS_I2C, DISABLE);
+    297              
+    298              /* clear the ADDR interrupt bit  - this is done by reading SR1 and SR2*/
+    299              CLEAR_ADDR_BIT;
+    300              
+    301              /*!< Send STOP Condition */
+    302              I2C_GenerateSTOP(SENSORS_I2C, ENABLE);
+    303              
+    304              /* Wait for the RXNE bit to be set */
+    305              WAIT_FOR_FLAG (I2C_FLAG_RXNE, SET, I2Cx_FLAG_TIMEOUT, 14);
+    306              
+    307              RegisterValue[0] = I2C_ReceiveData(SENSORS_I2C);
+    308            } 
+    309            else if( RegisterLen == 2) 
+    310            {
+    311               /*!< Disable Acknowledgment */
+    312              I2C_AcknowledgeConfig(SENSORS_I2C, DISABLE);
+    313              
+    314             /* Set POS bit */ 
+    315             SENSORS_I2C->CR1 |= I2C_CR1_POS;
+    316             
+    317             /* clear the ADDR interrupt bit  - this is done by reading SR1 and SR2*/
+    318             CLEAR_ADDR_BIT; 
+    319             
+    320             /* Wait for the buffer full bit to be set */
+    321             WAIT_FOR_FLAG (I2C_FLAG_BTF, SET, I2Cx_FLAG_TIMEOUT, 15);
+    322             
+    323             /*!< Send STOP Condition */
+    324             I2C_GenerateSTOP(SENSORS_I2C, ENABLE);
+    325          
+    326             /* Read 2 bytes */
+    327             RegisterValue[0] = I2C_ReceiveData(SENSORS_I2C);
+    328             RegisterValue[1] = I2C_ReceiveData(SENSORS_I2C);
+    329            } 
+    330            else if( RegisterLen == 3)
+    331            {
+    332              CLEAR_ADDR_BIT;
+    333              
+    334              /* Wait for the buffer full bit to be set */
+    335              WAIT_FOR_FLAG (I2C_FLAG_BTF, SET, I2Cx_FLAG_TIMEOUT, 16);
+    336              /*!< Disable Acknowledgment */
+    337              I2C_AcknowledgeConfig(SENSORS_I2C, DISABLE);
+    338              /* Read 1 bytes */
+    339              RegisterValue[0] = I2C_ReceiveData(SENSORS_I2C);
+    340              /*!< Send STOP Condition */
+    341              I2C_GenerateSTOP(SENSORS_I2C, ENABLE);        
+    342              /* Read 1 bytes */
+    343              RegisterValue[1] = I2C_ReceiveData(SENSORS_I2C);
+    344              /* Wait for the buffer full bit to be set */
+    345              WAIT_FOR_FLAG (I2C_FLAG_RXNE, SET, I2Cx_FLAG_TIMEOUT, 17);
+    346              /* Read 1 bytes */
+    347              RegisterValue[2] = I2C_ReceiveData(SENSORS_I2C);  
+    348            }  
+    349            else /* more than 2 bytes */
+    350            { 
+    351              /* clear the ADDR interrupt bit  - this is done by reading SR1 and SR2*/
+    352              CLEAR_ADDR_BIT;
+    353              
+    354              for(i=0; i<(RegisterLen); i++)
+    355              {
+    356                if(i==(RegisterLen-3))
+    357                {
+    358                  /* Wait for the buffer full bit to be set */
+    359                  WAIT_FOR_FLAG (I2C_FLAG_BTF, SET, I2Cx_FLAG_TIMEOUT, 16);
+    360                  
+    361                  /*!< Disable Acknowledgment */
+    362                  I2C_AcknowledgeConfig(SENSORS_I2C, DISABLE);
+    363                  
+    364                  /* Read 1 bytes */
+    365                  RegisterValue[i++] = I2C_ReceiveData(SENSORS_I2C);
+    366                  
+    367                  /*!< Send STOP Condition */
+    368                  I2C_GenerateSTOP(SENSORS_I2C, ENABLE);        
+    369                  
+    370                  /* Read 1 bytes */
+    371                  RegisterValue[i++] = I2C_ReceiveData(SENSORS_I2C);
+    372                  
+    373                  /* Wait for the buffer full bit to be set */
+    374                  WAIT_FOR_FLAG (I2C_FLAG_RXNE, SET, I2Cx_FLAG_TIMEOUT, 17);
+    375                  
+    376                  /* Read 1 bytes */
+    377                  RegisterValue[i++] = I2C_ReceiveData(SENSORS_I2C);  
+    378                  goto endReadLoop;
+    379                }
+    380                      
+    381                /* Wait for the RXNE bit to be set */
+    382                WAIT_FOR_FLAG (I2C_FLAG_RXNE, SET, I2Cx_FLAG_TIMEOUT, 18);
+    383                RegisterValue[i] = I2C_ReceiveData(SENSORS_I2C); 
+    384              }   
+    385            } 
+    386            
+    387          endReadLoop:  
+    388            /* Clear BTF flag */
+    389            I2C_ClearFlag(SENSORS_I2C, I2C_FLAG_BTF);
+    390            /* Wait for the busy flag to be cleared */
+    391            WAIT_FOR_FLAG (I2C_FLAG_BUSY, RESET, I2Cx_LONG_TIMEOUT, 19);  
+    392            /*!< Re-Enable Acknowledgment to be ready for another reception */
+    393            I2C_AcknowledgeConfig(SENSORS_I2C, ENABLE);
+    394            //Disable POS -- TODO
+    395            SENSORS_I2C->CR1 &= ~I2C_CR1_POS;  
+    396               
+    397            /* Return the byte read from sensor */
+    398            return result;
+    399          }
+    400          
+    401          static unsigned short RETRY_IN_MLSEC  = 55;
+    402          
+    403          void Set_I2C_Retry(unsigned short ml_sec)
+    404          {
+    405            RETRY_IN_MLSEC = ml_sec;
+    406          }
+    407          
+    408          unsigned short Get_I2C_Retry()
+    409          {
+    410            return RETRY_IN_MLSEC;
+    411          }
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       0   Get_I2C_Retry
+      24   I2Cx_TIMEOUT_UserCallback
+        24   -> I2C_Cmd
+        24   -> I2C_DeInit
+        24   -> I2C_GenerateSTOP
+        24   -> I2C_Init
+        24   -> I2C_SoftwareResetCmd
+      32   I2cMaster_Init
+        32   -> GPIO_Init
+        32   -> GPIO_PinAFConfig
+        32   -> I2C_Cmd
+        32   -> I2C_DeInit
+        32   -> I2C_Init
+        32   -> RCC_AHB1PeriphClockCmd
+        32   -> RCC_APB1PeriphClockCmd
+      32   ST_Sensors_I2C_ReadRegister
+        32   -> I2C_AcknowledgeConfig
+        32   -> I2C_ClearFlag
+        32   -> I2C_GenerateSTART
+        32   -> I2C_GenerateSTOP
+        32   -> I2C_GetFlagStatus
+        32   -> I2C_ReadRegister
+        32   -> I2C_ReceiveData
+        32   -> I2C_Send7bitAddress
+        32   -> I2C_SendData
+        32   -> I2Cx_TIMEOUT_UserCallback
+      32   ST_Sensors_I2C_WriteRegister
+        32   -> I2C_GenerateSTART
+        32   -> I2C_GenerateSTOP
+        32   -> I2C_GetFlagStatus
+        32   -> I2C_ReadRegister
+        32   -> I2C_Send7bitAddress
+        32   -> I2C_SendData
+        32   -> I2Cx_TIMEOUT_UserCallback
+      32   Sensors_I2C_ReadRegister
+        32   -> Get_I2C_Retry
+        32   -> ST_Sensors_I2C_ReadRegister
+        32   -> mdelay
+      32   Sensors_I2C_WriteRegister
+        32   -> Get_I2C_Retry
+        32   -> ST_Sensors_I2C_WriteRegister
+        32   -> mdelay
+       0   Set_I2C_Retry
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable5
+       4  ??DataTable5_1
+       4  ??DataTable5_2
+       4  ??DataTable5_3
+       4  ??DataTable5_4
+       4  ??DataTable5_5
+       4  ??DataTable5_6
+       4  ??DataTable5_7
+       4  ??DataTable5_8
+       4  ??DataTable5_9
+       6  Get_I2C_Retry
+     110  I2Cx_TIMEOUT_UserCallback
+     176  I2cMaster_Init
+       2  RETRY_IN_MLSEC
+     982  ST_Sensors_I2C_ReadRegister
+     366  ST_Sensors_I2C_WriteRegister
+      88  Sensors_I2C_ReadRegister
+      88  Sensors_I2C_WriteRegister
+       6  Set_I2C_Retry
+
+ 
+     2 bytes in section .data
+ 1 862 bytes in section .text
+ 
+ 1 862 bytes of CODE memory
+     2 bytes of DATA memory
+
+Errors: none
+Warnings: none

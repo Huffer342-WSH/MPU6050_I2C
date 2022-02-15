@@ -1,0 +1,1581 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V7.30.1.7746/W32 for ARM        05/May/2015  09:12:24
+# Copyright 1999-2014 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\driver\eMPL\inv_mpu_dmp_motion_driver.c
+#    Command line =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\driver\eMPL\inv_mpu_dmp_motion_driver.c
+#        -D USE_STDPERIPH_DRIVER -D USE_DMP -D MPL_LOG_NDEBUG=1 -D EMPL -D
+#        MPU9250 -D EMPL_TARGET_STM32F4 -lcN
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\ -o
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\ --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M4F -e
+#        --fpu=VFPv4_sp --dlib_config "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 7.0_2\arm\INC\c\DLib_Config_Normal.h" -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\User\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\inc\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\Peripheral\src\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\STM32F4xx_StdPeriph_Driver\src\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\DeviceSupport\inc\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\include\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\eMPL\
+#        -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\driver\stm32l\
+#        -I C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mllite\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\mpl\ -I
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\..\core\eMPL-hal\ -Ol
+#        -I "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        7.0_2\arm\CMSIS\Include\"
+#    List file    =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\List\inv_mpu_dmp_motion_driver.lst
+#    Object file  =  
+#        C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\EWARM\Debug\Obj\inv_mpu_dmp_motion_driver.o
+#
+###############################################################################
+
+C:\STM32_EWARM\STM32F4_MD6\Projects\eMD6\core\driver\eMPL\inv_mpu_dmp_motion_driver.c
+      1          /*
+      2           $License:
+      3              Copyright (C) 2011-2012 InvenSense Corporation, All Rights Reserved.
+      4              See included License.txt for License information.
+      5           $
+      6           */
+      7          /**
+      8           *  @addtogroup  DRIVERS Sensor Driver Layer
+      9           *  @brief       Hardware drivers to communicate with sensors via I2C.
+     10           *
+     11           *  @{
+     12           *      @file       inv_mpu_dmp_motion_driver.c
+     13           *      @brief      DMP image and interface functions.
+     14           *      @details    All functions are preceded by the dmp_ prefix to
+     15           *                  differentiate among MPL and general driver function calls.
+     16           */
+     17          #include <stdio.h>
+     18          #include <stdint.h>
+     19          #include <stdlib.h>
+     20          #include <string.h>
+     21          #include <math.h>
+     22          #include "inv_mpu.h"
+     23          #include "inv_mpu_dmp_motion_driver.h"
+     24          #include "dmpKey.h"
+     25          #include "dmpmap.h"
+     26          
+     27          /* The following functions must be defined for this platform:
+     28           * i2c_write(unsigned char slave_addr, unsigned char reg_addr,
+     29           *      unsigned char length, unsigned char const *data)
+     30           * i2c_read(unsigned char slave_addr, unsigned char reg_addr,
+     31           *      unsigned char length, unsigned char *data)
+     32           * delay_ms(unsigned long num_ms)
+     33           * get_ms(unsigned long *count)
+     34           */
+     35          #if defined EMPL_TARGET_STM32F4
+     36          #include "i2c.h"   
+     37          #include "main.h"
+     38          #include "board-st_discovery.h"
+     39             
+     40          #define i2c_write   Sensors_I2C_WriteRegister
+     41          #define i2c_read    Sensors_I2C_ReadRegister
+     42          #define get_ms      get_tick_count
+     43          
+     44          #elif defined MOTION_DRIVER_TARGET_MSP430
+     45          #include "msp430.h"
+     46          #include "msp430_clock.h"
+     47          #define delay_ms    msp430_delay_ms
+     48          #define get_ms      msp430_get_clock_ms
+     49          #define log_i(...)     do {} while (0)
+     50          #define log_e(...)     do {} while (0)
+     51          
+     52          #elif defined EMPL_TARGET_MSP430
+     53          #include "msp430.h"
+     54          #include "msp430_clock.h"
+     55          #include "log.h"
+     56          #define delay_ms    msp430_delay_ms
+     57          #define get_ms      msp430_get_clock_ms
+     58          #define log_i       MPL_LOGI
+     59          #define log_e       MPL_LOGE
+     60          
+     61          #elif defined EMPL_TARGET_UC3L0
+     62          /* Instead of using the standard TWI driver from the ASF library, we're using
+     63           * a TWI driver that follows the slave address + register address convention.
+     64           */
+     65          #include "delay.h"
+     66          #include "sysclk.h"
+     67          #include "log.h"
+     68          #include "uc3l0_clock.h"
+     69          /* delay_ms is a function already defined in ASF. */
+     70          #define get_ms  uc3l0_get_clock_ms
+     71          #define log_i       MPL_LOGI
+     72          #define log_e       MPL_LOGE
+     73          
+     74          #else
+     75          #error  Gyro driver is missing the system layer implementations.
+     76          #endif
+     77          
+     78          /* These defines are copied from dmpDefaultMPU6050.c in the general MPL
+     79           * releases. These defines may change for each DMP image, so be sure to modify
+     80           * these values when switching to a new image.
+     81           */
+     82          #define CFG_LP_QUAT             (2712)
+     83          #define END_ORIENT_TEMP         (1866)
+     84          #define CFG_27                  (2742)
+     85          #define CFG_20                  (2224)
+     86          #define CFG_23                  (2745)
+     87          #define CFG_FIFO_ON_EVENT       (2690)
+     88          #define END_PREDICTION_UPDATE   (1761)
+     89          #define CGNOTICE_INTR           (2620)
+     90          #define X_GRT_Y_TMP             (1358)
+     91          #define CFG_DR_INT              (1029)
+     92          #define CFG_AUTH                (1035)
+     93          #define UPDATE_PROP_ROT         (1835)
+     94          #define END_COMPARE_Y_X_TMP2    (1455)
+     95          #define SKIP_X_GRT_Y_TMP        (1359)
+     96          #define SKIP_END_COMPARE        (1435)
+     97          #define FCFG_3                  (1088)
+     98          #define FCFG_2                  (1066)
+     99          #define FCFG_1                  (1062)
+    100          #define END_COMPARE_Y_X_TMP3    (1434)
+    101          #define FCFG_7                  (1073)
+    102          #define FCFG_6                  (1106)
+    103          #define FLAT_STATE_END          (1713)
+    104          #define SWING_END_4             (1616)
+    105          #define SWING_END_2             (1565)
+    106          #define SWING_END_3             (1587)
+    107          #define SWING_END_1             (1550)
+    108          #define CFG_8                   (2718)
+    109          #define CFG_15                  (2727)
+    110          #define CFG_16                  (2746)
+    111          #define CFG_EXT_GYRO_BIAS       (1189)
+    112          #define END_COMPARE_Y_X_TMP     (1407)
+    113          #define DO_NOT_UPDATE_PROP_ROT  (1839)
+    114          #define CFG_7                   (1205)
+    115          #define FLAT_STATE_END_TEMP     (1683)
+    116          #define END_COMPARE_Y_X         (1484)
+    117          #define SKIP_SWING_END_1        (1551)
+    118          #define SKIP_SWING_END_3        (1588)
+    119          #define SKIP_SWING_END_2        (1566)
+    120          #define TILTG75_START           (1672)
+    121          #define CFG_6                   (2753)
+    122          #define TILTL75_END             (1669)
+    123          #define END_ORIENT              (1884)
+    124          #define CFG_FLICK_IN            (2573)
+    125          #define TILTL75_START           (1643)
+    126          #define CFG_MOTION_BIAS         (1208)
+    127          #define X_GRT_Y                 (1408)
+    128          #define TEMPLABEL               (2324)
+    129          #define CFG_ANDROID_ORIENT_INT  (1853)
+    130          #define CFG_GYRO_RAW_DATA       (2722)
+    131          #define X_GRT_Y_TMP2            (1379)
+    132          
+    133          #define D_0_22                  (22+512)
+    134          #define D_0_24                  (24+512)
+    135          
+    136          #define D_0_36                  (36)
+    137          #define D_0_52                  (52)
+    138          #define D_0_96                  (96)
+    139          #define D_0_104                 (104)
+    140          #define D_0_108                 (108)
+    141          #define D_0_163                 (163)
+    142          #define D_0_188                 (188)
+    143          #define D_0_192                 (192)
+    144          #define D_0_224                 (224)
+    145          #define D_0_228                 (228)
+    146          #define D_0_232                 (232)
+    147          #define D_0_236                 (236)
+    148          
+    149          #define D_1_2                   (256 + 2)
+    150          #define D_1_4                   (256 + 4)
+    151          #define D_1_8                   (256 + 8)
+    152          #define D_1_10                  (256 + 10)
+    153          #define D_1_24                  (256 + 24)
+    154          #define D_1_28                  (256 + 28)
+    155          #define D_1_36                  (256 + 36)
+    156          #define D_1_40                  (256 + 40)
+    157          #define D_1_44                  (256 + 44)
+    158          #define D_1_72                  (256 + 72)
+    159          #define D_1_74                  (256 + 74)
+    160          #define D_1_79                  (256 + 79)
+    161          #define D_1_88                  (256 + 88)
+    162          #define D_1_90                  (256 + 90)
+    163          #define D_1_92                  (256 + 92)
+    164          #define D_1_96                  (256 + 96)
+    165          #define D_1_98                  (256 + 98)
+    166          #define D_1_106                 (256 + 106)
+    167          #define D_1_108                 (256 + 108)
+    168          #define D_1_112                 (256 + 112)
+    169          #define D_1_128                 (256 + 144)
+    170          #define D_1_152                 (256 + 12)
+    171          #define D_1_160                 (256 + 160)
+    172          #define D_1_176                 (256 + 176)
+    173          #define D_1_178                 (256 + 178)
+    174          #define D_1_218                 (256 + 218)
+    175          #define D_1_232                 (256 + 232)
+    176          #define D_1_236                 (256 + 236)
+    177          #define D_1_240                 (256 + 240)
+    178          #define D_1_244                 (256 + 244)
+    179          #define D_1_250                 (256 + 250)
+    180          #define D_1_252                 (256 + 252)
+    181          #define D_2_12                  (512 + 12)
+    182          #define D_2_96                  (512 + 96)
+    183          #define D_2_108                 (512 + 108)
+    184          #define D_2_208                 (512 + 208)
+    185          #define D_2_224                 (512 + 224)
+    186          #define D_2_236                 (512 + 236)
+    187          #define D_2_244                 (512 + 244)
+    188          #define D_2_248                 (512 + 248)
+    189          #define D_2_252                 (512 + 252)
+    190          
+    191          #define CPASS_BIAS_X            (35 * 16 + 4)
+    192          #define CPASS_BIAS_Y            (35 * 16 + 8)
+    193          #define CPASS_BIAS_Z            (35 * 16 + 12)
+    194          #define CPASS_MTX_00            (36 * 16)
+    195          #define CPASS_MTX_01            (36 * 16 + 4)
+    196          #define CPASS_MTX_02            (36 * 16 + 8)
+    197          #define CPASS_MTX_10            (36 * 16 + 12)
+    198          #define CPASS_MTX_11            (37 * 16)
+    199          #define CPASS_MTX_12            (37 * 16 + 4)
+    200          #define CPASS_MTX_20            (37 * 16 + 8)
+    201          #define CPASS_MTX_21            (37 * 16 + 12)
+    202          #define CPASS_MTX_22            (43 * 16 + 12)
+    203          #define D_EXT_GYRO_BIAS_X       (61 * 16)
+    204          #define D_EXT_GYRO_BIAS_Y       (61 * 16) + 4
+    205          #define D_EXT_GYRO_BIAS_Z       (61 * 16) + 8
+    206          #define D_ACT0                  (40 * 16)
+    207          #define D_ACSX                  (40 * 16 + 4)
+    208          #define D_ACSY                  (40 * 16 + 8)
+    209          #define D_ACSZ                  (40 * 16 + 12)
+    210          
+    211          #define FLICK_MSG               (45 * 16 + 4)
+    212          #define FLICK_COUNTER           (45 * 16 + 8)
+    213          #define FLICK_LOWER             (45 * 16 + 12)
+    214          #define FLICK_UPPER             (46 * 16 + 12)
+    215          
+    216          #define D_AUTH_OUT              (992)
+    217          #define D_AUTH_IN               (996)
+    218          #define D_AUTH_A                (1000)
+    219          #define D_AUTH_B                (1004)
+    220          
+    221          #define D_PEDSTD_BP_B           (768 + 0x1C)
+    222          #define D_PEDSTD_HP_A           (768 + 0x78)
+    223          #define D_PEDSTD_HP_B           (768 + 0x7C)
+    224          #define D_PEDSTD_BP_A4          (768 + 0x40)
+    225          #define D_PEDSTD_BP_A3          (768 + 0x44)
+    226          #define D_PEDSTD_BP_A2          (768 + 0x48)
+    227          #define D_PEDSTD_BP_A1          (768 + 0x4C)
+    228          #define D_PEDSTD_INT_THRSH      (768 + 0x68)
+    229          #define D_PEDSTD_CLIP           (768 + 0x6C)
+    230          #define D_PEDSTD_SB             (768 + 0x28)
+    231          #define D_PEDSTD_SB_TIME        (768 + 0x2C)
+    232          #define D_PEDSTD_PEAKTHRSH      (768 + 0x98)
+    233          #define D_PEDSTD_TIML           (768 + 0x2A)
+    234          #define D_PEDSTD_TIMH           (768 + 0x2E)
+    235          #define D_PEDSTD_PEAK           (768 + 0X94)
+    236          #define D_PEDSTD_STEPCTR        (768 + 0x60)
+    237          #define D_PEDSTD_TIMECTR        (964)
+    238          #define D_PEDSTD_DECI           (768 + 0xA0)
+    239          
+    240          #define D_HOST_NO_MOT           (976)
+    241          #define D_ACCEL_BIAS            (660)
+    242          
+    243          #define D_ORIENT_GAP            (76)
+    244          
+    245          #define D_TILT0_H               (48)
+    246          #define D_TILT0_L               (50)
+    247          #define D_TILT1_H               (52)
+    248          #define D_TILT1_L               (54)
+    249          #define D_TILT2_H               (56)
+    250          #define D_TILT2_L               (58)
+    251          #define D_TILT3_H               (60)
+    252          #define D_TILT3_L               (62)
+    253          
+    254          #define DMP_CODE_SIZE           (3062)
+    255          
+    256          static const unsigned char dmp_memory[DMP_CODE_SIZE] = {
+    257              /* bank # 0 */
+    258              0x00, 0x00, 0x70, 0x00, 0x00, 0x00, 0x00, 0x24, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00,
+    259              0x00, 0x65, 0x00, 0x54, 0xff, 0xef, 0x00, 0x00, 0xfa, 0x80, 0x00, 0x0b, 0x12, 0x82, 0x00, 0x01,
+    260              0x03, 0x0c, 0x30, 0xc3, 0x0e, 0x8c, 0x8c, 0xe9, 0x14, 0xd5, 0x40, 0x02, 0x13, 0x71, 0x0f, 0x8e,
+    261              0x38, 0x83, 0xf8, 0x83, 0x30, 0x00, 0xf8, 0x83, 0x25, 0x8e, 0xf8, 0x83, 0x30, 0x00, 0xf8, 0x83,
+    262              0xff, 0xff, 0xff, 0xff, 0x0f, 0xfe, 0xa9, 0xd6, 0x24, 0x00, 0x04, 0x00, 0x1a, 0x82, 0x79, 0xa1,
+    263              0x00, 0x00, 0x00, 0x3c, 0xff, 0xff, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x38, 0x83, 0x6f, 0xa2,
+    264              0x00, 0x3e, 0x03, 0x30, 0x40, 0x00, 0x00, 0x00, 0x02, 0xca, 0xe3, 0x09, 0x3e, 0x80, 0x00, 0x00,
+    265              0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x60, 0x00, 0x00, 0x00,
+    266              0x00, 0x0c, 0x00, 0x00, 0x00, 0x0c, 0x18, 0x6e, 0x00, 0x00, 0x06, 0x92, 0x0a, 0x16, 0xc0, 0xdf,
+    267              0xff, 0xff, 0x02, 0x56, 0xfd, 0x8c, 0xd3, 0x77, 0xff, 0xe1, 0xc4, 0x96, 0xe0, 0xc5, 0xbe, 0xaa,
+    268              0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0x0b, 0x2b, 0x00, 0x00, 0x16, 0x57, 0x00, 0x00, 0x03, 0x59,
+    269              0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1d, 0xfa, 0x00, 0x02, 0x6c, 0x1d, 0x00, 0x00, 0x00, 0x00,
+    270              0x3f, 0xff, 0xdf, 0xeb, 0x00, 0x3e, 0xb3, 0xb6, 0x00, 0x0d, 0x22, 0x78, 0x00, 0x00, 0x2f, 0x3c,
+    271              0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x42, 0xb5, 0x00, 0x00, 0x39, 0xa2, 0x00, 0x00, 0xb3, 0x65,
+    272              0xd9, 0x0e, 0x9f, 0xc9, 0x1d, 0xcf, 0x4c, 0x34, 0x30, 0x00, 0x00, 0x00, 0x50, 0x00, 0x00, 0x00,
+    273              0x3b, 0xb6, 0x7a, 0xe8, 0x00, 0x64, 0x00, 0x00, 0x00, 0xc8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    274              /* bank # 1 */
+    275              0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0xfa, 0x92, 0x10, 0x00, 0x22, 0x5e, 0x00, 0x0d, 0x22, 0x9f,
+    276              0x00, 0x01, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00, 0xff, 0x46, 0x00, 0x00, 0x63, 0xd4, 0x00, 0x00,
+    277              0x10, 0x00, 0x00, 0x00, 0x04, 0xd6, 0x00, 0x00, 0x04, 0xcc, 0x00, 0x00, 0x04, 0xcc, 0x00, 0x00,
+    278              0x00, 0x00, 0x10, 0x72, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    279              0x00, 0x06, 0x00, 0x02, 0x00, 0x05, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00,
+    280              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x05, 0x00, 0x64, 0x00, 0x20, 0x00, 0x00,
+    281              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x03, 0x00,
+    282              0x00, 0x00, 0x00, 0x32, 0xf8, 0x98, 0x00, 0x00, 0xff, 0x65, 0x00, 0x00, 0x83, 0x0f, 0x00, 0x00,
+    283              0xff, 0x9b, 0xfc, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    284              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    285              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+    286              0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0xb2, 0x6a, 0x00, 0x02, 0x00, 0x00,
+    287              0x00, 0x01, 0xfb, 0x83, 0x00, 0x68, 0x00, 0x00, 0x00, 0xd9, 0xfc, 0x00, 0x7c, 0xf1, 0xff, 0x83,
+    288              0x00, 0x00, 0x00, 0x00, 0x00, 0x65, 0x00, 0x00, 0x00, 0x64, 0x03, 0xe8, 0x00, 0x64, 0x00, 0x28,
+    289              0x00, 0x00, 0x00, 0x25, 0x00, 0x00, 0x00, 0x00, 0x16, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00,
+    290              0x00, 0x00, 0x10, 0x00, 0x00, 0x2f, 0x00, 0x00, 0x00, 0x00, 0x01, 0xf4, 0x00, 0x00, 0x10, 0x00,
+    291              /* bank # 2 */
+    292              0x00, 0x28, 0x00, 0x00, 0xff, 0xff, 0x45, 0x81, 0xff, 0xff, 0xfa, 0x72, 0x00, 0x00, 0x00, 0x00,
+    293              0x00, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x05, 0x00, 0x05, 0xba, 0xc6, 0x00, 0x47, 0x78, 0xa2,
+    294              0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x14,
+    295              0x00, 0x00, 0x25, 0x4d, 0x00, 0x2f, 0x70, 0x6d, 0x00, 0x00, 0x05, 0xae, 0x00, 0x0c, 0x02, 0xd0,
+    296              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    297              0x00, 0x1b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    298              0x00, 0x64, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    299              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    300              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    301              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    302              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    303              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    304              0x00, 0x1b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x0e,
+    305              0x00, 0x00, 0x0a, 0xc7, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x32, 0xff, 0xff, 0xff, 0x9c,
+    306              0x00, 0x00, 0x0b, 0x2b, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x64,
+    307              0xff, 0xe5, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    308              /* bank # 3 */
+    309              0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    310              0x00, 0x01, 0x80, 0x00, 0x00, 0x01, 0x80, 0x00, 0x00, 0x01, 0x80, 0x00, 0x00, 0x24, 0x26, 0xd3,
+    311              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x10, 0x00, 0x96, 0x00, 0x3c,
+    312              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    313              0x0c, 0x0a, 0x4e, 0x68, 0xcd, 0xcf, 0x77, 0x09, 0x50, 0x16, 0x67, 0x59, 0xc6, 0x19, 0xce, 0x82,
+    314              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    315              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0xd7, 0x84, 0x00, 0x03, 0x00, 0x00, 0x00,
+    316              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc7, 0x93, 0x8f, 0x9d, 0x1e, 0x1b, 0x1c, 0x19,
+    317              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    318              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x03, 0x18, 0x85, 0x00, 0x00, 0x40, 0x00,
+    319              0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    320              0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    321              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    322              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    323              0x00, 0x00, 0x00, 0x00, 0x67, 0x7d, 0xdf, 0x7e, 0x72, 0x90, 0x2e, 0x55, 0x4c, 0xf6, 0xe6, 0x88,
+    324              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    325          
+    326              /* bank # 4 */
+    327              0xd8, 0xdc, 0xb4, 0xb8, 0xb0, 0xd8, 0xb9, 0xab, 0xf3, 0xf8, 0xfa, 0xb3, 0xb7, 0xbb, 0x8e, 0x9e,
+    328              0xae, 0xf1, 0x32, 0xf5, 0x1b, 0xf1, 0xb4, 0xb8, 0xb0, 0x80, 0x97, 0xf1, 0xa9, 0xdf, 0xdf, 0xdf,
+    329              0xaa, 0xdf, 0xdf, 0xdf, 0xf2, 0xaa, 0xc5, 0xcd, 0xc7, 0xa9, 0x0c, 0xc9, 0x2c, 0x97, 0xf1, 0xa9,
+    330              0x89, 0x26, 0x46, 0x66, 0xb2, 0x89, 0x99, 0xa9, 0x2d, 0x55, 0x7d, 0xb0, 0xb0, 0x8a, 0xa8, 0x96,
+    331              0x36, 0x56, 0x76, 0xf1, 0xba, 0xa3, 0xb4, 0xb2, 0x80, 0xc0, 0xb8, 0xa8, 0x97, 0x11, 0xb2, 0x83,
+    332              0x98, 0xba, 0xa3, 0xf0, 0x24, 0x08, 0x44, 0x10, 0x64, 0x18, 0xb2, 0xb9, 0xb4, 0x98, 0x83, 0xf1,
+    333              0xa3, 0x29, 0x55, 0x7d, 0xba, 0xb5, 0xb1, 0xa3, 0x83, 0x93, 0xf0, 0x00, 0x28, 0x50, 0xf5, 0xb2,
+    334              0xb6, 0xaa, 0x83, 0x93, 0x28, 0x54, 0x7c, 0xf1, 0xb9, 0xa3, 0x82, 0x93, 0x61, 0xba, 0xa2, 0xda,
+    335              0xde, 0xdf, 0xdb, 0x81, 0x9a, 0xb9, 0xae, 0xf5, 0x60, 0x68, 0x70, 0xf1, 0xda, 0xba, 0xa2, 0xdf,
+    336              0xd9, 0xba, 0xa2, 0xfa, 0xb9, 0xa3, 0x82, 0x92, 0xdb, 0x31, 0xba, 0xa2, 0xd9, 0xba, 0xa2, 0xf8,
+    337              0xdf, 0x85, 0xa4, 0xd0, 0xc1, 0xbb, 0xad, 0x83, 0xc2, 0xc5, 0xc7, 0xb8, 0xa2, 0xdf, 0xdf, 0xdf,
+    338              0xba, 0xa0, 0xdf, 0xdf, 0xdf, 0xd8, 0xd8, 0xf1, 0xb8, 0xaa, 0xb3, 0x8d, 0xb4, 0x98, 0x0d, 0x35,
+    339              0x5d, 0xb2, 0xb6, 0xba, 0xaf, 0x8c, 0x96, 0x19, 0x8f, 0x9f, 0xa7, 0x0e, 0x16, 0x1e, 0xb4, 0x9a,
+    340              0xb8, 0xaa, 0x87, 0x2c, 0x54, 0x7c, 0xba, 0xa4, 0xb0, 0x8a, 0xb6, 0x91, 0x32, 0x56, 0x76, 0xb2,
+    341              0x84, 0x94, 0xa4, 0xc8, 0x08, 0xcd, 0xd8, 0xb8, 0xb4, 0xb0, 0xf1, 0x99, 0x82, 0xa8, 0x2d, 0x55,
+    342              0x7d, 0x98, 0xa8, 0x0e, 0x16, 0x1e, 0xa2, 0x2c, 0x54, 0x7c, 0x92, 0xa4, 0xf0, 0x2c, 0x50, 0x78,
+    343              /* bank # 5 */
+    344              0xf1, 0x84, 0xa8, 0x98, 0xc4, 0xcd, 0xfc, 0xd8, 0x0d, 0xdb, 0xa8, 0xfc, 0x2d, 0xf3, 0xd9, 0xba,
+    345              0xa6, 0xf8, 0xda, 0xba, 0xa6, 0xde, 0xd8, 0xba, 0xb2, 0xb6, 0x86, 0x96, 0xa6, 0xd0, 0xf3, 0xc8,
+    346              0x41, 0xda, 0xa6, 0xc8, 0xf8, 0xd8, 0xb0, 0xb4, 0xb8, 0x82, 0xa8, 0x92, 0xf5, 0x2c, 0x54, 0x88,
+    347              0x98, 0xf1, 0x35, 0xd9, 0xf4, 0x18, 0xd8, 0xf1, 0xa2, 0xd0, 0xf8, 0xf9, 0xa8, 0x84, 0xd9, 0xc7,
+    348              0xdf, 0xf8, 0xf8, 0x83, 0xc5, 0xda, 0xdf, 0x69, 0xdf, 0x83, 0xc1, 0xd8, 0xf4, 0x01, 0x14, 0xf1,
+    349              0xa8, 0x82, 0x4e, 0xa8, 0x84, 0xf3, 0x11, 0xd1, 0x82, 0xf5, 0xd9, 0x92, 0x28, 0x97, 0x88, 0xf1,
+    350              0x09, 0xf4, 0x1c, 0x1c, 0xd8, 0x84, 0xa8, 0xf3, 0xc0, 0xf9, 0xd1, 0xd9, 0x97, 0x82, 0xf1, 0x29,
+    351              0xf4, 0x0d, 0xd8, 0xf3, 0xf9, 0xf9, 0xd1, 0xd9, 0x82, 0xf4, 0xc2, 0x03, 0xd8, 0xde, 0xdf, 0x1a,
+    352              0xd8, 0xf1, 0xa2, 0xfa, 0xf9, 0xa8, 0x84, 0x98, 0xd9, 0xc7, 0xdf, 0xf8, 0xf8, 0xf8, 0x83, 0xc7,
+    353              0xda, 0xdf, 0x69, 0xdf, 0xf8, 0x83, 0xc3, 0xd8, 0xf4, 0x01, 0x14, 0xf1, 0x98, 0xa8, 0x82, 0x2e,
+    354              0xa8, 0x84, 0xf3, 0x11, 0xd1, 0x82, 0xf5, 0xd9, 0x92, 0x50, 0x97, 0x88, 0xf1, 0x09, 0xf4, 0x1c,
+    355              0xd8, 0x84, 0xa8, 0xf3, 0xc0, 0xf8, 0xf9, 0xd1, 0xd9, 0x97, 0x82, 0xf1, 0x49, 0xf4, 0x0d, 0xd8,
+    356              0xf3, 0xf9, 0xf9, 0xd1, 0xd9, 0x82, 0xf4, 0xc4, 0x03, 0xd8, 0xde, 0xdf, 0xd8, 0xf1, 0xad, 0x88,
+    357              0x98, 0xcc, 0xa8, 0x09, 0xf9, 0xd9, 0x82, 0x92, 0xa8, 0xf5, 0x7c, 0xf1, 0x88, 0x3a, 0xcf, 0x94,
+    358              0x4a, 0x6e, 0x98, 0xdb, 0x69, 0x31, 0xda, 0xad, 0xf2, 0xde, 0xf9, 0xd8, 0x87, 0x95, 0xa8, 0xf2,
+    359              0x21, 0xd1, 0xda, 0xa5, 0xf9, 0xf4, 0x17, 0xd9, 0xf1, 0xae, 0x8e, 0xd0, 0xc0, 0xc3, 0xae, 0x82,
+    360              /* bank # 6 */
+    361              0xc6, 0x84, 0xc3, 0xa8, 0x85, 0x95, 0xc8, 0xa5, 0x88, 0xf2, 0xc0, 0xf1, 0xf4, 0x01, 0x0e, 0xf1,
+    362              0x8e, 0x9e, 0xa8, 0xc6, 0x3e, 0x56, 0xf5, 0x54, 0xf1, 0x88, 0x72, 0xf4, 0x01, 0x15, 0xf1, 0x98,
+    363              0x45, 0x85, 0x6e, 0xf5, 0x8e, 0x9e, 0x04, 0x88, 0xf1, 0x42, 0x98, 0x5a, 0x8e, 0x9e, 0x06, 0x88,
+    364              0x69, 0xf4, 0x01, 0x1c, 0xf1, 0x98, 0x1e, 0x11, 0x08, 0xd0, 0xf5, 0x04, 0xf1, 0x1e, 0x97, 0x02,
+    365              0x02, 0x98, 0x36, 0x25, 0xdb, 0xf9, 0xd9, 0x85, 0xa5, 0xf3, 0xc1, 0xda, 0x85, 0xa5, 0xf3, 0xdf,
+    366              0xd8, 0x85, 0x95, 0xa8, 0xf3, 0x09, 0xda, 0xa5, 0xfa, 0xd8, 0x82, 0x92, 0xa8, 0xf5, 0x78, 0xf1,
+    367              0x88, 0x1a, 0x84, 0x9f, 0x26, 0x88, 0x98, 0x21, 0xda, 0xf4, 0x1d, 0xf3, 0xd8, 0x87, 0x9f, 0x39,
+    368              0xd1, 0xaf, 0xd9, 0xdf, 0xdf, 0xfb, 0xf9, 0xf4, 0x0c, 0xf3, 0xd8, 0xfa, 0xd0, 0xf8, 0xda, 0xf9,
+    369              0xf9, 0xd0, 0xdf, 0xd9, 0xf9, 0xd8, 0xf4, 0x0b, 0xd8, 0xf3, 0x87, 0x9f, 0x39, 0xd1, 0xaf, 0xd9,
+    370              0xdf, 0xdf, 0xf4, 0x1d, 0xf3, 0xd8, 0xfa, 0xfc, 0xa8, 0x69, 0xf9, 0xf9, 0xaf, 0xd0, 0xda, 0xde,
+    371              0xfa, 0xd9, 0xf8, 0x8f, 0x9f, 0xa8, 0xf1, 0xcc, 0xf3, 0x98, 0xdb, 0x45, 0xd9, 0xaf, 0xdf, 0xd0,
+    372              0xf8, 0xd8, 0xf1, 0x8f, 0x9f, 0xa8, 0xca, 0xf3, 0x88, 0x09, 0xda, 0xaf, 0x8f, 0xcb, 0xf8, 0xd8,
+    373              0xf2, 0xad, 0x97, 0x8d, 0x0c, 0xd9, 0xa5, 0xdf, 0xf9, 0xba, 0xa6, 0xf3, 0xfa, 0xf4, 0x12, 0xf2,
+    374              0xd8, 0x95, 0x0d, 0xd1, 0xd9, 0xba, 0xa6, 0xf3, 0xfa, 0xda, 0xa5, 0xf2, 0xc1, 0xba, 0xa6, 0xf3,
+    375              0xdf, 0xd8, 0xf1, 0xba, 0xb2, 0xb6, 0x86, 0x96, 0xa6, 0xd0, 0xca, 0xf3, 0x49, 0xda, 0xa6, 0xcb,
+    376              0xf8, 0xd8, 0xb0, 0xb4, 0xb8, 0xd8, 0xad, 0x84, 0xf2, 0xc0, 0xdf, 0xf1, 0x8f, 0xcb, 0xc3, 0xa8,
+    377              /* bank # 7 */
+    378              0xb2, 0xb6, 0x86, 0x96, 0xc8, 0xc1, 0xcb, 0xc3, 0xf3, 0xb0, 0xb4, 0x88, 0x98, 0xa8, 0x21, 0xdb,
+    379              0x71, 0x8d, 0x9d, 0x71, 0x85, 0x95, 0x21, 0xd9, 0xad, 0xf2, 0xfa, 0xd8, 0x85, 0x97, 0xa8, 0x28,
+    380              0xd9, 0xf4, 0x08, 0xd8, 0xf2, 0x8d, 0x29, 0xda, 0xf4, 0x05, 0xd9, 0xf2, 0x85, 0xa4, 0xc2, 0xf2,
+    381              0xd8, 0xa8, 0x8d, 0x94, 0x01, 0xd1, 0xd9, 0xf4, 0x11, 0xf2, 0xd8, 0x87, 0x21, 0xd8, 0xf4, 0x0a,
+    382              0xd8, 0xf2, 0x84, 0x98, 0xa8, 0xc8, 0x01, 0xd1, 0xd9, 0xf4, 0x11, 0xd8, 0xf3, 0xa4, 0xc8, 0xbb,
+    383              0xaf, 0xd0, 0xf2, 0xde, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xd8, 0xf1, 0xb8, 0xf6,
+    384              0xb5, 0xb9, 0xb0, 0x8a, 0x95, 0xa3, 0xde, 0x3c, 0xa3, 0xd9, 0xf8, 0xd8, 0x5c, 0xa3, 0xd9, 0xf8,
+    385              0xd8, 0x7c, 0xa3, 0xd9, 0xf8, 0xd8, 0xf8, 0xf9, 0xd1, 0xa5, 0xd9, 0xdf, 0xda, 0xfa, 0xd8, 0xb1,
+    386              0x85, 0x30, 0xf7, 0xd9, 0xde, 0xd8, 0xf8, 0x30, 0xad, 0xda, 0xde, 0xd8, 0xf2, 0xb4, 0x8c, 0x99,
+    387              0xa3, 0x2d, 0x55, 0x7d, 0xa0, 0x83, 0xdf, 0xdf, 0xdf, 0xb5, 0x91, 0xa0, 0xf6, 0x29, 0xd9, 0xfb,
+    388              0xd8, 0xa0, 0xfc, 0x29, 0xd9, 0xfa, 0xd8, 0xa0, 0xd0, 0x51, 0xd9, 0xf8, 0xd8, 0xfc, 0x51, 0xd9,
+    389              0xf9, 0xd8, 0x79, 0xd9, 0xfb, 0xd8, 0xa0, 0xd0, 0xfc, 0x79, 0xd9, 0xfa, 0xd8, 0xa1, 0xf9, 0xf9,
+    390              0xf9, 0xf9, 0xf9, 0xa0, 0xda, 0xdf, 0xdf, 0xdf, 0xd8, 0xa1, 0xf8, 0xf8, 0xf8, 0xf8, 0xf8, 0xac,
+    391              0xde, 0xf8, 0xad, 0xde, 0x83, 0x93, 0xac, 0x2c, 0x54, 0x7c, 0xf1, 0xa8, 0xdf, 0xdf, 0xdf, 0xf6,
+    392              0x9d, 0x2c, 0xda, 0xa0, 0xdf, 0xd9, 0xfa, 0xdb, 0x2d, 0xf8, 0xd8, 0xa8, 0x50, 0xda, 0xa0, 0xd0,
+    393              0xde, 0xd9, 0xd0, 0xf8, 0xf8, 0xf8, 0xdb, 0x55, 0xf8, 0xd8, 0xa8, 0x78, 0xda, 0xa0, 0xd0, 0xdf,
+    394              /* bank # 8 */
+    395              0xd9, 0xd0, 0xfa, 0xf8, 0xf8, 0xf8, 0xf8, 0xdb, 0x7d, 0xf8, 0xd8, 0x9c, 0xa8, 0x8c, 0xf5, 0x30,
+    396              0xdb, 0x38, 0xd9, 0xd0, 0xde, 0xdf, 0xa0, 0xd0, 0xde, 0xdf, 0xd8, 0xa8, 0x48, 0xdb, 0x58, 0xd9,
+    397              0xdf, 0xd0, 0xde, 0xa0, 0xdf, 0xd0, 0xde, 0xd8, 0xa8, 0x68, 0xdb, 0x70, 0xd9, 0xdf, 0xdf, 0xa0,
+    398              0xdf, 0xdf, 0xd8, 0xf1, 0xa8, 0x88, 0x90, 0x2c, 0x54, 0x7c, 0x98, 0xa8, 0xd0, 0x5c, 0x38, 0xd1,
+    399              0xda, 0xf2, 0xae, 0x8c, 0xdf, 0xf9, 0xd8, 0xb0, 0x87, 0xa8, 0xc1, 0xc1, 0xb1, 0x88, 0xa8, 0xc6,
+    400              0xf9, 0xf9, 0xda, 0x36, 0xd8, 0xa8, 0xf9, 0xda, 0x36, 0xd8, 0xa8, 0xf9, 0xda, 0x36, 0xd8, 0xa8,
+    401              0xf9, 0xda, 0x36, 0xd8, 0xa8, 0xf9, 0xda, 0x36, 0xd8, 0xf7, 0x8d, 0x9d, 0xad, 0xf8, 0x18, 0xda,
+    402              0xf2, 0xae, 0xdf, 0xd8, 0xf7, 0xad, 0xfa, 0x30, 0xd9, 0xa4, 0xde, 0xf9, 0xd8, 0xf2, 0xae, 0xde,
+    403              0xfa, 0xf9, 0x83, 0xa7, 0xd9, 0xc3, 0xc5, 0xc7, 0xf1, 0x88, 0x9b, 0xa7, 0x7a, 0xad, 0xf7, 0xde,
+    404              0xdf, 0xa4, 0xf8, 0x84, 0x94, 0x08, 0xa7, 0x97, 0xf3, 0x00, 0xae, 0xf2, 0x98, 0x19, 0xa4, 0x88,
+    405              0xc6, 0xa3, 0x94, 0x88, 0xf6, 0x32, 0xdf, 0xf2, 0x83, 0x93, 0xdb, 0x09, 0xd9, 0xf2, 0xaa, 0xdf,
+    406              0xd8, 0xd8, 0xae, 0xf8, 0xf9, 0xd1, 0xda, 0xf3, 0xa4, 0xde, 0xa7, 0xf1, 0x88, 0x9b, 0x7a, 0xd8,
+    407              0xf3, 0x84, 0x94, 0xae, 0x19, 0xf9, 0xda, 0xaa, 0xf1, 0xdf, 0xd8, 0xa8, 0x81, 0xc0, 0xc3, 0xc5,
+    408              0xc7, 0xa3, 0x92, 0x83, 0xf6, 0x28, 0xad, 0xde, 0xd9, 0xf8, 0xd8, 0xa3, 0x50, 0xad, 0xd9, 0xf8,
+    409              0xd8, 0xa3, 0x78, 0xad, 0xd9, 0xf8, 0xd8, 0xf8, 0xf9, 0xd1, 0xa1, 0xda, 0xde, 0xc3, 0xc5, 0xc7,
+    410              0xd8, 0xa1, 0x81, 0x94, 0xf8, 0x18, 0xf2, 0xb0, 0x89, 0xac, 0xc3, 0xc5, 0xc7, 0xf1, 0xd8, 0xb8,
+    411              /* bank # 9 */
+    412              0xb4, 0xb0, 0x97, 0x86, 0xa8, 0x31, 0x9b, 0x06, 0x99, 0x07, 0xab, 0x97, 0x28, 0x88, 0x9b, 0xf0,
+    413              0x0c, 0x20, 0x14, 0x40, 0xb0, 0xb4, 0xb8, 0xf0, 0xa8, 0x8a, 0x9a, 0x28, 0x50, 0x78, 0xb7, 0x9b,
+    414              0xa8, 0x29, 0x51, 0x79, 0x24, 0x70, 0x59, 0x44, 0x69, 0x38, 0x64, 0x48, 0x31, 0xf1, 0xbb, 0xab,
+    415              0x88, 0x00, 0x2c, 0x54, 0x7c, 0xf0, 0xb3, 0x8b, 0xb8, 0xa8, 0x04, 0x28, 0x50, 0x78, 0xf1, 0xb0,
+    416              0x88, 0xb4, 0x97, 0x26, 0xa8, 0x59, 0x98, 0xbb, 0xab, 0xb3, 0x8b, 0x02, 0x26, 0x46, 0x66, 0xb0,
+    417              0xb8, 0xf0, 0x8a, 0x9c, 0xa8, 0x29, 0x51, 0x79, 0x8b, 0x29, 0x51, 0x79, 0x8a, 0x24, 0x70, 0x59,
+    418              0x8b, 0x20, 0x58, 0x71, 0x8a, 0x44, 0x69, 0x38, 0x8b, 0x39, 0x40, 0x68, 0x8a, 0x64, 0x48, 0x31,
+    419              0x8b, 0x30, 0x49, 0x60, 0x88, 0xf1, 0xac, 0x00, 0x2c, 0x54, 0x7c, 0xf0, 0x8c, 0xa8, 0x04, 0x28,
+    420              0x50, 0x78, 0xf1, 0x88, 0x97, 0x26, 0xa8, 0x59, 0x98, 0xac, 0x8c, 0x02, 0x26, 0x46, 0x66, 0xf0,
+    421              0x89, 0x9c, 0xa8, 0x29, 0x51, 0x79, 0x24, 0x70, 0x59, 0x44, 0x69, 0x38, 0x64, 0x48, 0x31, 0xa9,
+    422              0x88, 0x09, 0x20, 0x59, 0x70, 0xab, 0x11, 0x38, 0x40, 0x69, 0xa8, 0x19, 0x31, 0x48, 0x60, 0x8c,
+    423              0xa8, 0x3c, 0x41, 0x5c, 0x20, 0x7c, 0x00, 0xf1, 0x87, 0x98, 0x19, 0x86, 0xa8, 0x6e, 0x76, 0x7e,
+    424              0xa9, 0x99, 0x88, 0x2d, 0x55, 0x7d, 0xd8, 0xb1, 0xb5, 0xb9, 0xa3, 0xdf, 0xdf, 0xdf, 0xae, 0xd0,
+    425              0xdf, 0xaa, 0xd0, 0xde, 0xf2, 0xab, 0xf8, 0xf9, 0xd9, 0xb0, 0x87, 0xc4, 0xaa, 0xf1, 0xdf, 0xdf,
+    426              0xbb, 0xaf, 0xdf, 0xdf, 0xb9, 0xd8, 0xb1, 0xf1, 0xa3, 0x97, 0x8e, 0x60, 0xdf, 0xb0, 0x84, 0xf2,
+    427              0xc8, 0xf8, 0xf9, 0xd9, 0xde, 0xd8, 0x93, 0x85, 0xf1, 0x4a, 0xb1, 0x83, 0xa3, 0x08, 0xb5, 0x83,
+    428              /* bank # 10 */
+    429              0x9a, 0x08, 0x10, 0xb7, 0x9f, 0x10, 0xd8, 0xf1, 0xb0, 0xba, 0xae, 0xb0, 0x8a, 0xc2, 0xb2, 0xb6,
+    430              0x8e, 0x9e, 0xf1, 0xfb, 0xd9, 0xf4, 0x1d, 0xd8, 0xf9, 0xd9, 0x0c, 0xf1, 0xd8, 0xf8, 0xf8, 0xad,
+    431              0x61, 0xd9, 0xae, 0xfb, 0xd8, 0xf4, 0x0c, 0xf1, 0xd8, 0xf8, 0xf8, 0xad, 0x19, 0xd9, 0xae, 0xfb,
+    432              0xdf, 0xd8, 0xf4, 0x16, 0xf1, 0xd8, 0xf8, 0xad, 0x8d, 0x61, 0xd9, 0xf4, 0xf4, 0xac, 0xf5, 0x9c,
+    433              0x9c, 0x8d, 0xdf, 0x2b, 0xba, 0xb6, 0xae, 0xfa, 0xf8, 0xf4, 0x0b, 0xd8, 0xf1, 0xae, 0xd0, 0xf8,
+    434              0xad, 0x51, 0xda, 0xae, 0xfa, 0xf8, 0xf1, 0xd8, 0xb9, 0xb1, 0xb6, 0xa3, 0x83, 0x9c, 0x08, 0xb9,
+    435              0xb1, 0x83, 0x9a, 0xb5, 0xaa, 0xc0, 0xfd, 0x30, 0x83, 0xb7, 0x9f, 0x10, 0xb5, 0x8b, 0x93, 0xf2,
+    436              0x02, 0x02, 0xd1, 0xab, 0xda, 0xde, 0xd8, 0xf1, 0xb0, 0x80, 0xba, 0xab, 0xc0, 0xc3, 0xb2, 0x84,
+    437              0xc1, 0xc3, 0xd8, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0x09, 0xb4, 0xd9, 0xab, 0xde, 0xb0,
+    438              0x87, 0x9c, 0xb9, 0xa3, 0xdd, 0xf1, 0xb3, 0x8b, 0x8b, 0x8b, 0x8b, 0x8b, 0xb0, 0x87, 0xa3, 0xa3,
+    439              0xa3, 0xa3, 0xb2, 0x8b, 0xb6, 0x9b, 0xf2, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3,
+    440              0xa3, 0xf1, 0xb0, 0x87, 0xb5, 0x9a, 0xa3, 0xf3, 0x9b, 0xa3, 0xa3, 0xdc, 0xba, 0xac, 0xdf, 0xb9,
+    441              0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3, 0xa3,
+    442              0xd8, 0xd8, 0xd8, 0xbb, 0xb3, 0xb7, 0xf1, 0xaa, 0xf9, 0xda, 0xff, 0xd9, 0x80, 0x9a, 0xaa, 0x28,
+    443              0xb4, 0x80, 0x98, 0xa7, 0x20, 0xb7, 0x97, 0x87, 0xa8, 0x66, 0x88, 0xf0, 0x79, 0x51, 0xf1, 0x90,
+    444              0x2c, 0x87, 0x0c, 0xa7, 0x81, 0x97, 0x62, 0x93, 0xf0, 0x71, 0x71, 0x60, 0x85, 0x94, 0x01, 0x29,
+    445              /* bank # 11 */
+    446              0x51, 0x79, 0x90, 0xa5, 0xf1, 0x28, 0x4c, 0x6c, 0x87, 0x0c, 0x95, 0x18, 0x85, 0x78, 0xa3, 0x83,
+    447              0x90, 0x28, 0x4c, 0x6c, 0x88, 0x6c, 0xd8, 0xf3, 0xa2, 0x82, 0x00, 0xf2, 0x10, 0xa8, 0x92, 0x19,
+    448              0x80, 0xa2, 0xf2, 0xd9, 0x26, 0xd8, 0xf1, 0x88, 0xa8, 0x4d, 0xd9, 0x48, 0xd8, 0x96, 0xa8, 0x39,
+    449              0x80, 0xd9, 0x3c, 0xd8, 0x95, 0x80, 0xa8, 0x39, 0xa6, 0x86, 0x98, 0xd9, 0x2c, 0xda, 0x87, 0xa7,
+    450              0x2c, 0xd8, 0xa8, 0x89, 0x95, 0x19, 0xa9, 0x80, 0xd9, 0x38, 0xd8, 0xa8, 0x89, 0x39, 0xa9, 0x80,
+    451              0xda, 0x3c, 0xd8, 0xa8, 0x2e, 0xa8, 0x39, 0x90, 0xd9, 0x0c, 0xd8, 0xa8, 0x95, 0x31, 0x98, 0xd9,
+    452              0x0c, 0xd8, 0xa8, 0x09, 0xd9, 0xff, 0xd8, 0x01, 0xda, 0xff, 0xd8, 0x95, 0x39, 0xa9, 0xda, 0x26,
+    453              0xff, 0xd8, 0x90, 0xa8, 0x0d, 0x89, 0x99, 0xa8, 0x10, 0x80, 0x98, 0x21, 0xda, 0x2e, 0xd8, 0x89,
+    454              0x99, 0xa8, 0x31, 0x80, 0xda, 0x2e, 0xd8, 0xa8, 0x86, 0x96, 0x31, 0x80, 0xda, 0x2e, 0xd8, 0xa8,
+    455              0x87, 0x31, 0x80, 0xda, 0x2e, 0xd8, 0xa8, 0x82, 0x92, 0xf3, 0x41, 0x80, 0xf1, 0xd9, 0x2e, 0xd8,
+    456              0xa8, 0x82, 0xf3, 0x19, 0x80, 0xf1, 0xd9, 0x2e, 0xd8, 0x82, 0xac, 0xf3, 0xc0, 0xa2, 0x80, 0x22,
+    457              0xf1, 0xa6, 0x2e, 0xa7, 0x2e, 0xa9, 0x22, 0x98, 0xa8, 0x29, 0xda, 0xac, 0xde, 0xff, 0xd8, 0xa2,
+    458              0xf2, 0x2a, 0xf1, 0xa9, 0x2e, 0x82, 0x92, 0xa8, 0xf2, 0x31, 0x80, 0xa6, 0x96, 0xf1, 0xd9, 0x00,
+    459              0xac, 0x8c, 0x9c, 0x0c, 0x30, 0xac, 0xde, 0xd0, 0xde, 0xff, 0xd8, 0x8c, 0x9c, 0xac, 0xd0, 0x10,
+    460              0xac, 0xde, 0x80, 0x92, 0xa2, 0xf2, 0x4c, 0x82, 0xa8, 0xf1, 0xca, 0xf2, 0x35, 0xf1, 0x96, 0x88,
+    461              0xa6, 0xd9, 0x00, 0xd8, 0xf1, 0xff
+    462          };
+    463          
+    464          static const unsigned short sStartAddress = 0x0400;
+    465          
+    466          /* END OF SECTION COPIED FROM dmpDefaultMPU6050.c */
+    467          
+    468          #define INT_SRC_TAP             (0x01)
+    469          #define INT_SRC_ANDROID_ORIENT  (0x08)
+    470          
+    471          #define DMP_FEATURE_SEND_ANY_GYRO   (DMP_FEATURE_SEND_RAW_GYRO | \
+    472                                               DMP_FEATURE_SEND_CAL_GYRO)
+    473          
+    474          #define MAX_PACKET_LENGTH   (32)
+    475          
+    476          #define DMP_SAMPLE_RATE     (200)
+    477          #define GYRO_SF             (46850825LL * 200 / DMP_SAMPLE_RATE)
+    478          
+    479          #define FIFO_CORRUPTION_CHECK
+    480          #ifdef FIFO_CORRUPTION_CHECK
+    481          #define QUAT_ERROR_THRESH       (1L<<24)
+    482          #define QUAT_MAG_SQ_NORMALIZED  (1L<<28)
+    483          #define QUAT_MAG_SQ_MIN         (QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
+    484          #define QUAT_MAG_SQ_MAX         (QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
+    485          #endif
+    486          
+    487          struct dmp_s {
+    488              void (*tap_cb)(unsigned char count, unsigned char direction);
+    489              void (*android_orient_cb)(unsigned char orientation);
+    490              unsigned short orient;
+    491              unsigned short feature_mask;
+    492              unsigned short fifo_rate;
+    493              unsigned char packet_length;
+    494          };
+    495          
+    496          static struct dmp_s dmp = {
+    497              .tap_cb = NULL,
+    498              .android_orient_cb = NULL,
+    499              .orient = 0,
+    500              .feature_mask = 0,
+    501              .fifo_rate = 0,
+    502              .packet_length = 0
+    503          };
+    504          
+    505          /**
+    506           *  @brief  Load the DMP with this image.
+    507           *  @return 0 if successful.
+    508           */
+    509          int dmp_load_motion_driver_firmware(void)
+    510          {
+    511              return mpu_load_firmware(DMP_CODE_SIZE, dmp_memory, sStartAddress,
+    512                  DMP_SAMPLE_RATE);
+    513          }
+    514          
+    515          /**
+    516           *  @brief      Push gyro and accel orientation to the DMP.
+    517           *  The orientation is represented here as the output of
+    518           *  @e inv_orientation_matrix_to_scalar.
+    519           *  @param[in]  orient  Gyro and accel orientation in body frame.
+    520           *  @return     0 if successful.
+    521           */
+    522          int dmp_set_orientation(unsigned short orient)
+    523          {
+    524              unsigned char gyro_regs[3], accel_regs[3];
+    525              const unsigned char gyro_axes[3] = {DINA4C, DINACD, DINA6C};
+    526              const unsigned char accel_axes[3] = {DINA0C, DINAC9, DINA2C};
+    527              const unsigned char gyro_sign[3] = {DINA36, DINA56, DINA76};
+    528              const unsigned char accel_sign[3] = {DINA26, DINA46, DINA66};
+    529          
+    530              gyro_regs[0] = gyro_axes[orient & 3];
+    531              gyro_regs[1] = gyro_axes[(orient >> 3) & 3];
+    532              gyro_regs[2] = gyro_axes[(orient >> 6) & 3];
+    533              accel_regs[0] = accel_axes[orient & 3];
+    534              accel_regs[1] = accel_axes[(orient >> 3) & 3];
+    535              accel_regs[2] = accel_axes[(orient >> 6) & 3];
+    536          
+    537              /* Chip-to-body, axes only. */
+    538              if (mpu_write_mem(FCFG_1, 3, gyro_regs))
+    539                  return -1;
+    540              if (mpu_write_mem(FCFG_2, 3, accel_regs))
+    541                  return -1;
+    542          
+    543              memcpy(gyro_regs, gyro_sign, 3);
+    544              memcpy(accel_regs, accel_sign, 3);
+    545              if (orient & 4) {
+    546                  gyro_regs[0] |= 1;
+    547                  accel_regs[0] |= 1;
+    548              }
+    549              if (orient & 0x20) {
+    550                  gyro_regs[1] |= 1;
+    551                  accel_regs[1] |= 1;
+    552              }
+    553              if (orient & 0x100) {
+    554                  gyro_regs[2] |= 1;
+    555                  accel_regs[2] |= 1;
+    556              }
+    557          
+    558              /* Chip-to-body, sign only. */
+    559              if (mpu_write_mem(FCFG_3, 3, gyro_regs))
+    560                  return -1;
+    561              if (mpu_write_mem(FCFG_7, 3, accel_regs))
+    562                  return -1;
+    563              dmp.orient = orient;
+    564              return 0;
+    565          }
+    566          
+    567          /**
+    568           *  @brief      Push gyro biases to the DMP.
+    569           *  Because the gyro integration is handled in the DMP, any gyro biases
+    570           *  calculated by the MPL should be pushed down to DMP memory to remove
+    571           *  3-axis quaternion drift.
+    572           *  \n NOTE: If the DMP-based gyro calibration is enabled, the DMP will
+    573           *  overwrite the biases written to this location once a new one is computed.
+    574           *  @param[in]  bias    Gyro biases in q16.
+    575           *  @return     0 if successful.
+    576           */
+    577          int dmp_set_gyro_bias(long *bias)
+    578          {
+    579              long gyro_bias_body[3];
+    580              unsigned char regs[4];
+    581          
+    582              gyro_bias_body[0] = bias[dmp.orient & 3];
+    583              if (dmp.orient & 4)
+    584                  gyro_bias_body[0] *= -1;
+    585              gyro_bias_body[1] = bias[(dmp.orient >> 3) & 3];
+    586              if (dmp.orient & 0x20)
+    587                  gyro_bias_body[1] *= -1;
+    588              gyro_bias_body[2] = bias[(dmp.orient >> 6) & 3];
+    589              if (dmp.orient & 0x100)
+    590                  gyro_bias_body[2] *= -1;
+    591          
+    592          #ifdef EMPL_NO_64BIT
+    593              gyro_bias_body[0] = (long)(((float)gyro_bias_body[0] * GYRO_SF) / 1073741824.f);
+    594              gyro_bias_body[1] = (long)(((float)gyro_bias_body[1] * GYRO_SF) / 1073741824.f);
+    595              gyro_bias_body[2] = (long)(((float)gyro_bias_body[2] * GYRO_SF) / 1073741824.f);
+    596          #else
+    597              gyro_bias_body[0] = (long)(((long long)gyro_bias_body[0] * GYRO_SF) >> 30);
+    598              gyro_bias_body[1] = (long)(((long long)gyro_bias_body[1] * GYRO_SF) >> 30);
+    599              gyro_bias_body[2] = (long)(((long long)gyro_bias_body[2] * GYRO_SF) >> 30);
+    600          #endif
+    601          
+    602              regs[0] = (unsigned char)((gyro_bias_body[0] >> 24) & 0xFF);
+    603              regs[1] = (unsigned char)((gyro_bias_body[0] >> 16) & 0xFF);
+    604              regs[2] = (unsigned char)((gyro_bias_body[0] >> 8) & 0xFF);
+    605              regs[3] = (unsigned char)(gyro_bias_body[0] & 0xFF);
+    606              if (mpu_write_mem(D_EXT_GYRO_BIAS_X, 4, regs))
+    607                  return -1;
+    608          
+    609              regs[0] = (unsigned char)((gyro_bias_body[1] >> 24) & 0xFF);
+    610              regs[1] = (unsigned char)((gyro_bias_body[1] >> 16) & 0xFF);
+    611              regs[2] = (unsigned char)((gyro_bias_body[1] >> 8) & 0xFF);
+    612              regs[3] = (unsigned char)(gyro_bias_body[1] & 0xFF);
+    613              if (mpu_write_mem(D_EXT_GYRO_BIAS_Y, 4, regs))
+    614                  return -1;
+    615          
+    616              regs[0] = (unsigned char)((gyro_bias_body[2] >> 24) & 0xFF);
+    617              regs[1] = (unsigned char)((gyro_bias_body[2] >> 16) & 0xFF);
+    618              regs[2] = (unsigned char)((gyro_bias_body[2] >> 8) & 0xFF);
+    619              regs[3] = (unsigned char)(gyro_bias_body[2] & 0xFF);
+    620              return mpu_write_mem(D_EXT_GYRO_BIAS_Z, 4, regs);
+    621          }
+    622          
+    623          /**
+    624           *  @brief      Push accel biases to the DMP.
+    625           *  These biases will be removed from the DMP 6-axis quaternion.
+    626           *  @param[in]  bias    Accel biases in q16.
+    627           *  @return     0 if successful.
+    628           */
+    629          int dmp_set_accel_bias(long *bias)
+    630          {
+    631              long accel_bias_body[3];
+    632              unsigned char regs[12];
+    633              long long accel_sf;
+    634              unsigned short accel_sens;
+    635          
+    636              mpu_get_accel_sens(&accel_sens);
+    637              accel_sf = (long long)accel_sens << 15;
+    638              __no_operation();
+    639          
+    640              accel_bias_body[0] = bias[dmp.orient & 3];
+    641              if (dmp.orient & 4)
+    642                  accel_bias_body[0] *= -1;
+    643              accel_bias_body[1] = bias[(dmp.orient >> 3) & 3];
+    644              if (dmp.orient & 0x20)
+    645                  accel_bias_body[1] *= -1;
+    646              accel_bias_body[2] = bias[(dmp.orient >> 6) & 3];
+    647              if (dmp.orient & 0x100)
+    648                  accel_bias_body[2] *= -1;
+    649          
+    650          #ifdef EMPL_NO_64BIT
+    651              accel_bias_body[0] = (long)(((float)accel_bias_body[0] * accel_sf) / 1073741824.f);
+    652              accel_bias_body[1] = (long)(((float)accel_bias_body[1] * accel_sf) / 1073741824.f);
+    653              accel_bias_body[2] = (long)(((float)accel_bias_body[2] * accel_sf) / 1073741824.f);
+    654          #else
+    655              accel_bias_body[0] = (long)(((long long)accel_bias_body[0] * accel_sf) >> 30);
+    656              accel_bias_body[1] = (long)(((long long)accel_bias_body[1] * accel_sf) >> 30);
+    657              accel_bias_body[2] = (long)(((long long)accel_bias_body[2] * accel_sf) >> 30);
+    658          #endif
+    659          
+    660              regs[0] = (unsigned char)((accel_bias_body[0] >> 24) & 0xFF);
+    661              regs[1] = (unsigned char)((accel_bias_body[0] >> 16) & 0xFF);
+    662              regs[2] = (unsigned char)((accel_bias_body[0] >> 8) & 0xFF);
+    663              regs[3] = (unsigned char)(accel_bias_body[0] & 0xFF);
+    664              regs[4] = (unsigned char)((accel_bias_body[1] >> 24) & 0xFF);
+    665              regs[5] = (unsigned char)((accel_bias_body[1] >> 16) & 0xFF);
+    666              regs[6] = (unsigned char)((accel_bias_body[1] >> 8) & 0xFF);
+    667              regs[7] = (unsigned char)(accel_bias_body[1] & 0xFF);
+    668              regs[8] = (unsigned char)((accel_bias_body[2] >> 24) & 0xFF);
+    669              regs[9] = (unsigned char)((accel_bias_body[2] >> 16) & 0xFF);
+    670              regs[10] = (unsigned char)((accel_bias_body[2] >> 8) & 0xFF);
+    671              regs[11] = (unsigned char)(accel_bias_body[2] & 0xFF);
+    672              return mpu_write_mem(D_ACCEL_BIAS, 12, regs);
+    673          }
+    674          
+    675          /**
+    676           *  @brief      Set DMP output rate.
+    677           *  Only used when DMP is on.
+    678           *  @param[in]  rate    Desired fifo rate (Hz).
+    679           *  @return     0 if successful.
+    680           */
+    681          int dmp_set_fifo_rate(unsigned short rate)
+    682          {
+    683              const unsigned char regs_end[12] = {DINAFE, DINAF2, DINAAB,
+    684                  0xc4, DINAAA, DINAF1, DINADF, DINADF, 0xBB, 0xAF, DINADF, DINADF};
+    685              unsigned short div;
+    686              unsigned char tmp[8];
+    687          
+    688              if (rate > DMP_SAMPLE_RATE)
+    689                  return -1;
+    690              div = DMP_SAMPLE_RATE / rate - 1;
+    691              tmp[0] = (unsigned char)((div >> 8) & 0xFF);
+    692              tmp[1] = (unsigned char)(div & 0xFF);
+    693              if (mpu_write_mem(D_0_22, 2, tmp))
+    694                  return -1;
+    695              if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end))
+    696                  return -1;
+    697          
+    698              dmp.fifo_rate = rate;
+    699              return 0;
+    700          }
+    701          
+    702          /**
+    703           *  @brief      Get DMP output rate.
+    704           *  @param[out] rate    Current fifo rate (Hz).
+    705           *  @return     0 if successful.
+    706           */
+    707          int dmp_get_fifo_rate(unsigned short *rate)
+    708          {
+    709              rate[0] = dmp.fifo_rate;
+    710              return 0;
+    711          }
+    712          
+    713          /**
+    714           *  @brief      Set tap threshold for a specific axis.
+    715           *  @param[in]  axis    1, 2, and 4 for XYZ accel, respectively.
+    716           *  @param[in]  thresh  Tap threshold, in mg/ms.
+    717           *  @return     0 if successful.
+    718           */
+    719          int dmp_set_tap_thresh(unsigned char axis, unsigned short thresh)
+    720          {
+    721              unsigned char tmp[4], accel_fsr;
+    722              float scaled_thresh;
+    723              unsigned short dmp_thresh, dmp_thresh_2;
+    724              if (!(axis & TAP_XYZ) || thresh > 1600)
+    725                  return -1;
+    726          
+    727              scaled_thresh = (float)thresh / DMP_SAMPLE_RATE;
+    728          
+    729              mpu_get_accel_fsr(&accel_fsr);
+    730              switch (accel_fsr) {
+    731              case 2:
+    732                  dmp_thresh = (unsigned short)(scaled_thresh * 16384);
+    733                  /* dmp_thresh * 0.75 */
+    734                  dmp_thresh_2 = (unsigned short)(scaled_thresh * 12288);
+    735                  break;
+    736              case 4:
+    737                  dmp_thresh = (unsigned short)(scaled_thresh * 8192);
+    738                  /* dmp_thresh * 0.75 */
+    739                  dmp_thresh_2 = (unsigned short)(scaled_thresh * 6144);
+    740                  break;
+    741              case 8:
+    742                  dmp_thresh = (unsigned short)(scaled_thresh * 4096);
+    743                  /* dmp_thresh * 0.75 */
+    744                  dmp_thresh_2 = (unsigned short)(scaled_thresh * 3072);
+    745                  break;
+    746              case 16:
+    747                  dmp_thresh = (unsigned short)(scaled_thresh * 2048);
+    748                  /* dmp_thresh * 0.75 */
+    749                  dmp_thresh_2 = (unsigned short)(scaled_thresh * 1536);
+    750                  break;
+    751              default:
+    752                  return -1;
+    753              }
+    754              tmp[0] = (unsigned char)(dmp_thresh >> 8);
+    755              tmp[1] = (unsigned char)(dmp_thresh & 0xFF);
+    756              tmp[2] = (unsigned char)(dmp_thresh_2 >> 8);
+    757              tmp[3] = (unsigned char)(dmp_thresh_2 & 0xFF);
+    758          
+    759              if (axis & TAP_X) {
+    760                  if (mpu_write_mem(DMP_TAP_THX, 2, tmp))
+    761                      return -1;
+    762                  if (mpu_write_mem(D_1_36, 2, tmp+2))
+    763                      return -1;
+    764              }
+    765              if (axis & TAP_Y) {
+    766                  if (mpu_write_mem(DMP_TAP_THY, 2, tmp))
+    767                      return -1;
+    768                  if (mpu_write_mem(D_1_40, 2, tmp+2))
+    769                      return -1;
+    770              }
+    771              if (axis & TAP_Z) {
+    772                  if (mpu_write_mem(DMP_TAP_THZ, 2, tmp))
+    773                      return -1;
+    774                  if (mpu_write_mem(D_1_44, 2, tmp+2))
+    775                      return -1;
+    776              }
+    777              return 0;
+    778          }
+    779          
+    780          /**
+    781           *  @brief      Set which axes will register a tap.
+    782           *  @param[in]  axis    1, 2, and 4 for XYZ, respectively.
+    783           *  @return     0 if successful.
+    784           */
+    785          int dmp_set_tap_axes(unsigned char axis)
+    786          {
+    787              unsigned char tmp = 0;
+    788          
+    789              if (axis & TAP_X)
+    790                  tmp |= 0x30;
+    791              if (axis & TAP_Y)
+    792                  tmp |= 0x0C;
+    793              if (axis & TAP_Z)
+    794                  tmp |= 0x03;
+    795              return mpu_write_mem(D_1_72, 1, &tmp);
+    796          }
+    797          
+    798          /**
+    799           *  @brief      Set minimum number of taps needed for an interrupt.
+    800           *  @param[in]  min_taps    Minimum consecutive taps (1-4).
+    801           *  @return     0 if successful.
+    802           */
+    803          int dmp_set_tap_count(unsigned char min_taps)
+    804          {
+    805              unsigned char tmp;
+    806          
+    807              if (min_taps < 1)
+    808                  min_taps = 1;
+    809              else if (min_taps > 4)
+    810                  min_taps = 4;
+    811          
+    812              tmp = min_taps - 1;
+    813              return mpu_write_mem(D_1_79, 1, &tmp);
+    814          }
+    815          
+    816          /**
+    817           *  @brief      Set length between valid taps.
+    818           *  @param[in]  time    Milliseconds between taps.
+    819           *  @return     0 if successful.
+    820           */
+    821          int dmp_set_tap_time(unsigned short time)
+    822          {
+    823              unsigned short dmp_time;
+    824              unsigned char tmp[2];
+    825          
+    826              dmp_time = time / (1000 / DMP_SAMPLE_RATE);
+    827              tmp[0] = (unsigned char)(dmp_time >> 8);
+    828              tmp[1] = (unsigned char)(dmp_time & 0xFF);
+    829              return mpu_write_mem(DMP_TAPW_MIN, 2, tmp);
+    830          }
+    831          
+    832          /**
+    833           *  @brief      Set max time between taps to register as a multi-tap.
+    834           *  @param[in]  time    Max milliseconds between taps.
+    835           *  @return     0 if successful.
+    836           */
+    837          int dmp_set_tap_time_multi(unsigned short time)
+    838          {
+    839              unsigned short dmp_time;
+    840              unsigned char tmp[2];
+    841          
+    842              dmp_time = time / (1000 / DMP_SAMPLE_RATE);
+    843              tmp[0] = (unsigned char)(dmp_time >> 8);
+    844              tmp[1] = (unsigned char)(dmp_time & 0xFF);
+    845              return mpu_write_mem(D_1_218, 2, tmp);
+    846          }
+    847          
+    848          /**
+    849           *  @brief      Set shake rejection threshold.
+    850           *  If the DMP detects a gyro sample larger than @e thresh, taps are rejected.
+    851           *  @param[in]  sf      Gyro scale factor.
+    852           *  @param[in]  thresh  Gyro threshold in dps.
+    853           *  @return     0 if successful.
+    854           */
+    855          int dmp_set_shake_reject_thresh(long sf, unsigned short thresh)
+    856          {
+    857              unsigned char tmp[4];
+    858              long thresh_scaled = sf / 1000 * thresh;
+    859              tmp[0] = (unsigned char)(((long)thresh_scaled >> 24) & 0xFF);
+    860              tmp[1] = (unsigned char)(((long)thresh_scaled >> 16) & 0xFF);
+    861              tmp[2] = (unsigned char)(((long)thresh_scaled >> 8) & 0xFF);
+    862              tmp[3] = (unsigned char)((long)thresh_scaled & 0xFF);
+    863              return mpu_write_mem(D_1_92, 4, tmp);
+    864          }
+    865          
+    866          /**
+    867           *  @brief      Set shake rejection time.
+    868           *  Sets the length of time that the gyro must be outside of the threshold set
+    869           *  by @e gyro_set_shake_reject_thresh before taps are rejected. A mandatory
+    870           *  60 ms is added to this parameter.
+    871           *  @param[in]  time    Time in milliseconds.
+    872           *  @return     0 if successful.
+    873           */
+    874          int dmp_set_shake_reject_time(unsigned short time)
+    875          {
+    876              unsigned char tmp[2];
+    877          
+    878              time /= (1000 / DMP_SAMPLE_RATE);
+    879              tmp[0] = time >> 8;
+    880              tmp[1] = time & 0xFF;
+    881              return mpu_write_mem(D_1_90,2,tmp);
+    882          }
+    883          
+    884          /**
+    885           *  @brief      Set shake rejection timeout.
+    886           *  Sets the length of time after a shake rejection that the gyro must stay
+    887           *  inside of the threshold before taps can be detected again. A mandatory
+    888           *  60 ms is added to this parameter.
+    889           *  @param[in]  time    Time in milliseconds.
+    890           *  @return     0 if successful.
+    891           */
+    892          int dmp_set_shake_reject_timeout(unsigned short time)
+    893          {
+    894              unsigned char tmp[2];
+    895          
+    896              time /= (1000 / DMP_SAMPLE_RATE);
+    897              tmp[0] = time >> 8;
+    898              tmp[1] = time & 0xFF;
+    899              return mpu_write_mem(D_1_88,2,tmp);
+    900          }
+    901          
+    902          /**
+    903           *  @brief      Get current step count.
+    904           *  @param[out] count   Number of steps detected.
+    905           *  @return     0 if successful.
+    906           */
+    907          int dmp_get_pedometer_step_count(unsigned long *count)
+    908          {
+    909              unsigned char tmp[4];
+    910              if (!count)
+    911                  return -1;
+    912          
+    913              if (mpu_read_mem(D_PEDSTD_STEPCTR, 4, tmp))
+    914                  return -1;
+    915          
+    916              count[0] = ((unsigned long)tmp[0] << 24) | ((unsigned long)tmp[1] << 16) |
+    917                  ((unsigned long)tmp[2] << 8) | tmp[3];
+    918              return 0;
+    919          }
+    920          
+    921          /**
+    922           *  @brief      Overwrite current step count.
+    923           *  WARNING: This function writes to DMP memory and could potentially encounter
+    924           *  a race condition if called while the pedometer is enabled.
+    925           *  @param[in]  count   New step count.
+    926           *  @return     0 if successful.
+    927           */
+    928          int dmp_set_pedometer_step_count(unsigned long count)
+    929          {
+    930              unsigned char tmp[4];
+    931          
+    932              tmp[0] = (unsigned char)((count >> 24) & 0xFF);
+    933              tmp[1] = (unsigned char)((count >> 16) & 0xFF);
+    934              tmp[2] = (unsigned char)((count >> 8) & 0xFF);
+    935              tmp[3] = (unsigned char)(count & 0xFF);
+    936              return mpu_write_mem(D_PEDSTD_STEPCTR, 4, tmp);
+    937          }
+    938          
+    939          /**
+    940           *  @brief      Get duration of walking time.
+    941           *  @param[in]  time    Walk time in milliseconds.
+    942           *  @return     0 if successful.
+    943           */
+    944          int dmp_get_pedometer_walk_time(unsigned long *time)
+    945          {
+    946              unsigned char tmp[4];
+    947              if (!time)
+    948                  return -1;
+    949          
+    950              if (mpu_read_mem(D_PEDSTD_TIMECTR, 4, tmp))
+    951                  return -1;
+    952          
+    953              time[0] = (((unsigned long)tmp[0] << 24) | ((unsigned long)tmp[1] << 16) |
+    954                  ((unsigned long)tmp[2] << 8) | tmp[3]) * 20;
+    955              return 0;
+    956          }
+    957          
+    958          /**
+    959           *  @brief      Overwrite current walk time.
+    960           *  WARNING: This function writes to DMP memory and could potentially encounter
+    961           *  a race condition if called while the pedometer is enabled.
+    962           *  @param[in]  time    New walk time in milliseconds.
+    963           */
+    964          int dmp_set_pedometer_walk_time(unsigned long time)
+    965          {
+    966              unsigned char tmp[4];
+    967          
+    968              time /= 20;
+    969          
+    970              tmp[0] = (unsigned char)((time >> 24) & 0xFF);
+    971              tmp[1] = (unsigned char)((time >> 16) & 0xFF);
+    972              tmp[2] = (unsigned char)((time >> 8) & 0xFF);
+    973              tmp[3] = (unsigned char)(time & 0xFF);
+    974              return mpu_write_mem(D_PEDSTD_TIMECTR, 4, tmp);
+    975          }
+    976          
+    977          /**
+    978           *  @brief      Enable DMP features.
+    979           *  The following \#define's are used in the input mask:
+    980           *  \n DMP_FEATURE_TAP
+    981           *  \n DMP_FEATURE_ANDROID_ORIENT
+    982           *  \n DMP_FEATURE_LP_QUAT
+    983           *  \n DMP_FEATURE_6X_LP_QUAT
+    984           *  \n DMP_FEATURE_GYRO_CAL
+    985           *  \n DMP_FEATURE_SEND_RAW_ACCEL
+    986           *  \n DMP_FEATURE_SEND_RAW_GYRO
+    987           *  \n NOTE: DMP_FEATURE_LP_QUAT and DMP_FEATURE_6X_LP_QUAT are mutually
+    988           *  exclusive.
+    989           *  \n NOTE: DMP_FEATURE_SEND_RAW_GYRO and DMP_FEATURE_SEND_CAL_GYRO are also
+    990           *  mutually exclusive.
+    991           *  @param[in]  mask    Mask of features to enable.
+    992           *  @return     0 if successful.
+    993           */
+    994          int dmp_enable_feature(unsigned short mask)
+    995          {
+    996              unsigned char tmp[10];
+    997          
+    998              /* TODO: All of these settings can probably be integrated into the default
+    999               * DMP image.
+   1000               */
+   1001              /* Set integration scale factor. */
+   1002              tmp[0] = (unsigned char)((GYRO_SF >> 24) & 0xFF);
+   1003              tmp[1] = (unsigned char)((GYRO_SF >> 16) & 0xFF);
+   1004              tmp[2] = (unsigned char)((GYRO_SF >> 8) & 0xFF);
+   1005              tmp[3] = (unsigned char)(GYRO_SF & 0xFF);
+   1006              mpu_write_mem(D_0_104, 4, tmp);
+   1007          
+   1008              /* Send sensor data to the FIFO. */
+   1009              tmp[0] = 0xA3;
+   1010              if (mask & DMP_FEATURE_SEND_RAW_ACCEL) {
+   1011                  tmp[1] = 0xC0;
+   1012                  tmp[2] = 0xC8;
+   1013                  tmp[3] = 0xC2;
+   1014              } else {
+   1015                  tmp[1] = 0xA3;
+   1016                  tmp[2] = 0xA3;
+   1017                  tmp[3] = 0xA3;
+   1018              }
+   1019              if (mask & DMP_FEATURE_SEND_ANY_GYRO) {
+   1020                  tmp[4] = 0xC4;
+   1021                  tmp[5] = 0xCC;
+   1022                  tmp[6] = 0xC6;
+   1023              } else {
+   1024                  tmp[4] = 0xA3;
+   1025                  tmp[5] = 0xA3;
+   1026                  tmp[6] = 0xA3;
+   1027              }
+   1028              tmp[7] = 0xA3;
+   1029              tmp[8] = 0xA3;
+   1030              tmp[9] = 0xA3;
+   1031              mpu_write_mem(CFG_15,10,tmp);
+   1032          
+   1033              /* Send gesture data to the FIFO. */
+   1034              if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
+   1035                  tmp[0] = DINA20;
+   1036              else
+   1037                  tmp[0] = 0xD8;
+   1038              mpu_write_mem(CFG_27,1,tmp);
+   1039          
+   1040              if (mask & DMP_FEATURE_GYRO_CAL)
+   1041                  dmp_enable_gyro_cal(1);
+   1042              else
+   1043                  dmp_enable_gyro_cal(0);
+   1044          
+   1045              if (mask & DMP_FEATURE_SEND_ANY_GYRO) {
+   1046                  if (mask & DMP_FEATURE_SEND_CAL_GYRO) {
+   1047                      tmp[0] = 0xB2;
+   1048                      tmp[1] = 0x8B;
+   1049                      tmp[2] = 0xB6;
+   1050                      tmp[3] = 0x9B;
+   1051                  } else {
+   1052                      tmp[0] = DINAC0;
+   1053                      tmp[1] = DINA80;
+   1054                      tmp[2] = DINAC2;
+   1055                      tmp[3] = DINA90;
+   1056                  }
+   1057                  mpu_write_mem(CFG_GYRO_RAW_DATA, 4, tmp);
+   1058              }
+   1059          
+   1060              if (mask & DMP_FEATURE_TAP) {
+   1061                  /* Enable tap. */
+   1062                  tmp[0] = 0xF8;
+   1063                  mpu_write_mem(CFG_20, 1, tmp);
+   1064                  dmp_set_tap_thresh(TAP_XYZ, 250);
+   1065                  dmp_set_tap_axes(TAP_XYZ);
+   1066                  dmp_set_tap_count(1);
+   1067                  dmp_set_tap_time(100);
+   1068                  dmp_set_tap_time_multi(500);
+   1069          
+   1070                  dmp_set_shake_reject_thresh(GYRO_SF, 200);
+   1071                  dmp_set_shake_reject_time(40);
+   1072                  dmp_set_shake_reject_timeout(10);
+   1073              } else {
+   1074                  tmp[0] = 0xD8;
+   1075                  mpu_write_mem(CFG_20, 1, tmp);
+   1076              }
+   1077          
+   1078              if (mask & DMP_FEATURE_ANDROID_ORIENT) {
+   1079                  tmp[0] = 0xD9;
+   1080              } else
+   1081                  tmp[0] = 0xD8;
+   1082              mpu_write_mem(CFG_ANDROID_ORIENT_INT, 1, tmp);
+   1083          
+   1084              if (mask & DMP_FEATURE_LP_QUAT)
+   1085                  dmp_enable_lp_quat(1);
+   1086              else
+   1087                  dmp_enable_lp_quat(0);
+   1088          
+   1089              if (mask & DMP_FEATURE_6X_LP_QUAT)
+   1090                  dmp_enable_6x_lp_quat(1);
+   1091              else
+   1092                  dmp_enable_6x_lp_quat(0);
+   1093          
+   1094              /* Pedometer is always enabled. */
+   1095              dmp.feature_mask = mask | DMP_FEATURE_PEDOMETER;
+   1096              mpu_reset_fifo();
+   1097          
+   1098              dmp.packet_length = 0;
+   1099              if (mask & DMP_FEATURE_SEND_RAW_ACCEL)
+   1100                  dmp.packet_length += 6;
+   1101              if (mask & DMP_FEATURE_SEND_ANY_GYRO)
+   1102                  dmp.packet_length += 6;
+   1103              if (mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT))
+   1104                  dmp.packet_length += 16;
+   1105              if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
+   1106                  dmp.packet_length += 4;
+   1107          
+   1108              return 0;
+   1109          }
+   1110          
+   1111          /**
+   1112           *  @brief      Get list of currently enabled DMP features.
+   1113           *  @param[out] Mask of enabled features.
+   1114           *  @return     0 if successful.
+   1115           */
+   1116          int dmp_get_enabled_features(unsigned short *mask)
+   1117          {
+   1118              mask[0] = dmp.feature_mask;
+   1119              return 0;
+   1120          }
+   1121          
+   1122          /**
+   1123           *  @brief      Calibrate the gyro data in the DMP.
+   1124           *  After eight seconds of no motion, the DMP will compute gyro biases and
+   1125           *  subtract them from the quaternion output. If @e dmp_enable_feature is
+   1126           *  called with @e DMP_FEATURE_SEND_CAL_GYRO, the biases will also be
+   1127           *  subtracted from the gyro output.
+   1128           *  @param[in]  enable  1 to enable gyro calibration.
+   1129           *  @return     0 if successful.
+   1130           */
+   1131          int dmp_enable_gyro_cal(unsigned char enable)
+   1132          {
+   1133              if (enable) {
+   1134                  unsigned char regs[9] = {0xb8, 0xaa, 0xb3, 0x8d, 0xb4, 0x98, 0x0d, 0x35, 0x5d};
+   1135                  return mpu_write_mem(CFG_MOTION_BIAS, 9, regs);
+   1136              } else {
+   1137                  unsigned char regs[9] = {0xb8, 0xaa, 0xaa, 0xaa, 0xb0, 0x88, 0xc3, 0xc5, 0xc7};
+   1138                  return mpu_write_mem(CFG_MOTION_BIAS, 9, regs);
+   1139              }
+   1140          }
+   1141          
+   1142          /**
+   1143           *  @brief      Generate 3-axis quaternions from the DMP.
+   1144           *  In this driver, the 3-axis and 6-axis DMP quaternion features are mutually
+   1145           *  exclusive.
+   1146           *  @param[in]  enable  1 to enable 3-axis quaternion.
+   1147           *  @return     0 if successful.
+   1148           */
+   1149          int dmp_enable_lp_quat(unsigned char enable)
+   1150          {
+   1151              unsigned char regs[4];
+   1152              if (enable) {
+   1153                  regs[0] = DINBC0;
+   1154                  regs[1] = DINBC2;
+   1155                  regs[2] = DINBC4;
+   1156                  regs[3] = DINBC6;
+   1157              }
+   1158              else
+   1159                  memset(regs, 0x8B, 4);
+   1160          
+   1161              mpu_write_mem(CFG_LP_QUAT, 4, regs);
+   1162          
+   1163              return mpu_reset_fifo();
+   1164          }
+   1165          
+   1166          /**
+   1167           *  @brief       Generate 6-axis quaternions from the DMP.
+   1168           *  In this driver, the 3-axis and 6-axis DMP quaternion features are mutually
+   1169           *  exclusive.
+   1170           *  @param[in]   enable  1 to enable 6-axis quaternion.
+   1171           *  @return      0 if successful.
+   1172           */
+   1173          int dmp_enable_6x_lp_quat(unsigned char enable)
+   1174          {
+   1175              unsigned char regs[4];
+   1176              if (enable) {
+   1177                  regs[0] = DINA20;
+   1178                  regs[1] = DINA28;
+   1179                  regs[2] = DINA30;
+   1180                  regs[3] = DINA38;
+   1181              } else
+   1182                  memset(regs, 0xA3, 4);
+   1183          
+   1184              mpu_write_mem(CFG_8, 4, regs);
+   1185          
+   1186              return mpu_reset_fifo();
+   1187          }
+   1188          
+   1189          /**
+   1190           *  @brief      Decode the four-byte gesture data and execute any callbacks.
+   1191           *  @param[in]  gesture Gesture data from DMP packet.
+   1192           *  @return     0 if successful.
+   1193           */
+   1194          static int decode_gesture(unsigned char *gesture)
+   1195          {
+   1196              unsigned char tap, android_orient;
+   1197          
+   1198              android_orient = gesture[3] & 0xC0;
+   1199              tap = 0x3F & gesture[3];
+   1200          
+   1201              if (gesture[1] & INT_SRC_TAP) {
+   1202                  unsigned char direction, count;
+   1203                  direction = tap >> 3;
+   1204                  count = (tap % 8) + 1;
+   1205                  if (dmp.tap_cb)
+   1206                      dmp.tap_cb(direction, count);
+   1207              }
+   1208          
+   1209              if (gesture[1] & INT_SRC_ANDROID_ORIENT) {
+   1210                  if (dmp.android_orient_cb)
+   1211                      dmp.android_orient_cb(android_orient >> 6);
+   1212              }
+   1213          
+   1214              return 0;
+   1215          }
+   1216          
+   1217          /**
+   1218           *  @brief      Specify when a DMP interrupt should occur.
+   1219           *  A DMP interrupt can be configured to trigger on either of the two
+   1220           *  conditions below:
+   1221           *  \n a. One FIFO period has elapsed (set by @e mpu_set_sample_rate).
+   1222           *  \n b. A tap event has been detected.
+   1223           *  @param[in]  mode    DMP_INT_GESTURE or DMP_INT_CONTINUOUS.
+   1224           *  @return     0 if successful.
+   1225           */
+   1226          int dmp_set_interrupt_mode(unsigned char mode)
+   1227          {
+   1228              const unsigned char regs_continuous[11] =
+   1229                  {0xd8, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0x09, 0xb4, 0xd9};
+   1230              const unsigned char regs_gesture[11] =
+   1231                  {0xda, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0xda, 0xb4, 0xda};
+   1232          
+   1233              switch (mode) {
+   1234              case DMP_INT_CONTINUOUS:
+   1235                  return mpu_write_mem(CFG_FIFO_ON_EVENT, 11,
+   1236                      (unsigned char*)regs_continuous);
+   1237              case DMP_INT_GESTURE:
+   1238                  return mpu_write_mem(CFG_FIFO_ON_EVENT, 11,
+   1239                      (unsigned char*)regs_gesture);
+   1240              default:
+   1241                  return -1;
+   1242              }
+   1243          }
+   1244          
+   1245          /**
+   1246           *  @brief      Get one packet from the FIFO.
+   1247           *  If @e sensors does not contain a particular sensor, disregard the data
+   1248           *  returned to that pointer.
+   1249           *  \n @e sensors can contain a combination of the following flags:
+   1250           *  \n INV_X_GYRO, INV_Y_GYRO, INV_Z_GYRO
+   1251           *  \n INV_XYZ_GYRO
+   1252           *  \n INV_XYZ_ACCEL
+   1253           *  \n INV_WXYZ_QUAT
+   1254           *  \n If the FIFO has no new data, @e sensors will be zero.
+   1255           *  \n If the FIFO is disabled, @e sensors will be zero and this function will
+   1256           *  return a non-zero error code.
+   1257           *  @param[out] gyro        Gyro data in hardware units.
+   1258           *  @param[out] accel       Accel data in hardware units.
+   1259           *  @param[out] quat        3-axis quaternion data in hardware units.
+   1260           *  @param[out] timestamp   Timestamp in milliseconds.
+   1261           *  @param[out] sensors     Mask of sensors read from FIFO.
+   1262           *  @param[out] more        Number of remaining packets.
+   1263           *  @return     0 if successful.
+   1264           */
+   1265          int dmp_read_fifo(short *gyro, short *accel, long *quat,
+   1266              unsigned long *timestamp, short *sensors, unsigned char *more)
+   1267          {
+   1268              unsigned char fifo_data[MAX_PACKET_LENGTH];
+   1269              unsigned char ii = 0;
+   1270          
+   1271              /* TODO: sensors[0] only changes when dmp_enable_feature is called. We can
+   1272               * cache this value and save some cycles.
+   1273               */
+   1274              sensors[0] = 0;
+   1275          
+   1276              /* Get a packet. */
+   1277              if (mpu_read_fifo_stream(dmp.packet_length, fifo_data, more))
+   1278                  return -1;
+   1279          
+   1280              /* Parse DMP packet. */
+   1281              if (dmp.feature_mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT)) {
+   1282          #ifdef FIFO_CORRUPTION_CHECK
+   1283                  long quat_q14[4], quat_mag_sq;
+   1284          #endif
+   1285                  quat[0] = ((long)fifo_data[0] << 24) | ((long)fifo_data[1] << 16) |
+   1286                      ((long)fifo_data[2] << 8) | fifo_data[3];
+   1287                  quat[1] = ((long)fifo_data[4] << 24) | ((long)fifo_data[5] << 16) |
+   1288                      ((long)fifo_data[6] << 8) | fifo_data[7];
+   1289                  quat[2] = ((long)fifo_data[8] << 24) | ((long)fifo_data[9] << 16) |
+   1290                      ((long)fifo_data[10] << 8) | fifo_data[11];
+   1291                  quat[3] = ((long)fifo_data[12] << 24) | ((long)fifo_data[13] << 16) |
+   1292                      ((long)fifo_data[14] << 8) | fifo_data[15];
+   1293                  ii += 16;
+   1294          #ifdef FIFO_CORRUPTION_CHECK
+   1295                  /* We can detect a corrupted FIFO by monitoring the quaternion data and
+   1296                   * ensuring that the magnitude is always normalized to one. This
+   1297                   * shouldn't happen in normal operation, but if an I2C error occurs,
+   1298                   * the FIFO reads might become misaligned.
+   1299                   *
+   1300                   * Let's start by scaling down the quaternion data to avoid long long
+   1301                   * math.
+   1302                   */
+   1303                  quat_q14[0] = quat[0] >> 16;
+   1304                  quat_q14[1] = quat[1] >> 16;
+   1305                  quat_q14[2] = quat[2] >> 16;
+   1306                  quat_q14[3] = quat[3] >> 16;
+   1307                  quat_mag_sq = quat_q14[0] * quat_q14[0] + quat_q14[1] * quat_q14[1] +
+   1308                      quat_q14[2] * quat_q14[2] + quat_q14[3] * quat_q14[3];
+   1309                  if ((quat_mag_sq < QUAT_MAG_SQ_MIN) ||
+   1310                      (quat_mag_sq > QUAT_MAG_SQ_MAX)) {
+   1311                      /* Quaternion is outside of the acceptable threshold. */
+   1312                      mpu_reset_fifo();
+   1313                      sensors[0] = 0;
+   1314                      return -1;
+   1315                  }
+   1316                  sensors[0] |= INV_WXYZ_QUAT;
+   1317          #endif
+   1318              }
+   1319          
+   1320              if (dmp.feature_mask & DMP_FEATURE_SEND_RAW_ACCEL) {
+   1321                  accel[0] = ((short)fifo_data[ii+0] << 8) | fifo_data[ii+1];
+   1322                  accel[1] = ((short)fifo_data[ii+2] << 8) | fifo_data[ii+3];
+   1323                  accel[2] = ((short)fifo_data[ii+4] << 8) | fifo_data[ii+5];
+   1324                  ii += 6;
+   1325                  sensors[0] |= INV_XYZ_ACCEL;
+   1326              }
+   1327          
+   1328              if (dmp.feature_mask & DMP_FEATURE_SEND_ANY_GYRO) {
+   1329                  gyro[0] = ((short)fifo_data[ii+0] << 8) | fifo_data[ii+1];
+   1330                  gyro[1] = ((short)fifo_data[ii+2] << 8) | fifo_data[ii+3];
+   1331                  gyro[2] = ((short)fifo_data[ii+4] << 8) | fifo_data[ii+5];
+   1332                  ii += 6;
+   1333                  sensors[0] |= INV_XYZ_GYRO;
+   1334              }
+   1335          
+   1336              /* Gesture data is at the end of the DMP packet. Parse it and call
+   1337               * the gesture callbacks (if registered).
+   1338               */
+   1339              if (dmp.feature_mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
+   1340                  decode_gesture(fifo_data + ii);
+   1341          
+   1342              get_ms(timestamp);
+   1343              return 0;
+   1344          }
+   1345          
+   1346          /**
+   1347           *  @brief      Register a function to be executed on a tap event.
+   1348           *  The tap direction is represented by one of the following:
+   1349           *  \n TAP_X_UP
+   1350           *  \n TAP_X_DOWN
+   1351           *  \n TAP_Y_UP
+   1352           *  \n TAP_Y_DOWN
+   1353           *  \n TAP_Z_UP
+   1354           *  \n TAP_Z_DOWN
+   1355           *  @param[in]  func    Callback function.
+   1356           *  @return     0 if successful.
+   1357           */
+   1358          int dmp_register_tap_cb(void (*func)(unsigned char, unsigned char))
+   1359          {
+   1360              dmp.tap_cb = func;
+   1361              return 0;
+   1362          }
+   1363          
+   1364          /**
+   1365           *  @brief      Register a function to be executed on a android orientation event.
+   1366           *  @param[in]  func    Callback function.
+   1367           *  @return     0 if successful.
+   1368           */
+   1369          int dmp_register_android_orient_cb(void (*func)(unsigned char))
+   1370          {
+   1371              dmp.android_orient_cb = func;
+   1372              return 0;
+   1373          }
+   1374          
+   1375          /**
+   1376           *  @}
+   1377           */
+   1378          
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+      16   decode_gesture
+        16   -- Indirect call
+      16   dmp_enable_6x_lp_quat
+        16   -> __aeabi_memset
+        16   -> mpu_reset_fifo
+        16   -> mpu_write_mem
+      24   dmp_enable_feature
+        24   -> dmp_enable_6x_lp_quat
+        24   -> dmp_enable_gyro_cal
+        24   -> dmp_enable_lp_quat
+        24   -> dmp_set_shake_reject_thresh
+        24   -> dmp_set_shake_reject_time
+        24   -> dmp_set_shake_reject_timeout
+        24   -> dmp_set_tap_axes
+        24   -> dmp_set_tap_count
+        24   -> dmp_set_tap_thresh
+        24   -> dmp_set_tap_time
+        24   -> dmp_set_tap_time_multi
+        24   -> mpu_reset_fifo
+        24   -> mpu_write_mem
+      32   dmp_enable_gyro_cal
+        32   -> mpu_write_mem
+      16   dmp_enable_lp_quat
+        16   -> __aeabi_memset
+        16   -> mpu_reset_fifo
+        16   -> mpu_write_mem
+       0   dmp_get_enabled_features
+       0   dmp_get_fifo_rate
+      16   dmp_get_pedometer_step_count
+        16   -> mpu_read_mem
+      16   dmp_get_pedometer_walk_time
+        16   -> mpu_read_mem
+       8   dmp_load_motion_driver_firmware
+         8   -> mpu_load_firmware
+      80   dmp_read_fifo
+        80   -> decode_gesture
+        80   -> get_tick_count
+        80   -> mpu_read_fifo_stream
+        80   -> mpu_reset_fifo
+       0   dmp_register_android_orient_cb
+       0   dmp_register_tap_cb
+      40   dmp_set_accel_bias
+        40   -> mpu_get_accel_sens
+        40   -> mpu_write_mem
+      32   dmp_set_fifo_rate
+        32   -> mpu_write_mem
+      24   dmp_set_gyro_bias
+        24   -> mpu_write_mem
+      40   dmp_set_interrupt_mode
+        40   -> mpu_write_mem
+      40   dmp_set_orientation
+        40   -> __aeabi_memcpy
+        40   -> mpu_write_mem
+       8   dmp_set_pedometer_step_count
+         8   -> mpu_write_mem
+       8   dmp_set_pedometer_walk_time
+         8   -> mpu_write_mem
+       8   dmp_set_shake_reject_thresh
+         8   -> mpu_write_mem
+       8   dmp_set_shake_reject_time
+         8   -> mpu_write_mem
+       8   dmp_set_shake_reject_timeout
+         8   -> mpu_write_mem
+       8   dmp_set_tap_axes
+         8   -> mpu_write_mem
+       8   dmp_set_tap_count
+         8   -> mpu_write_mem
+      24   dmp_set_tap_thresh
+        24   -> mpu_get_accel_fsr
+        24   -> mpu_write_mem
+       8   dmp_set_tap_time
+         8   -> mpu_write_mem
+       8   dmp_set_tap_time_multi
+         8   -> mpu_write_mem
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable13
+       4  ??DataTable14
+       4  ??DataTable14_1
+       4  ??DataTable14_10
+       4  ??DataTable14_11
+       4  ??DataTable14_2
+       4  ??DataTable14_3
+       4  ??DataTable14_4
+       4  ??DataTable14_5
+       4  ??DataTable14_6
+       4  ??DataTable14_7
+       4  ??DataTable14_8
+       4  ??DataTable14_9
+       4  ??DataTable6
+       4  ??DataTable6_1
+       4  ??DataTable6_2
+       4  ??DataTable6_3
+       4  ??DataTable6_4
+       4  ?_0
+       4  ?_1
+       4  ?_2
+       4  ?_3
+      12  ?_4
+      12  ?_5
+      12  ?_6
+      12  ?_7
+      12  ?_8
+      86  decode_gesture
+      16  dmp
+      66  dmp_enable_6x_lp_quat
+     560  dmp_enable_feature
+      66  dmp_enable_gyro_cal
+      66  dmp_enable_lp_quat
+      12  dmp_get_enabled_features
+      12  dmp_get_fifo_rate
+      72  dmp_get_pedometer_step_count
+      76  dmp_get_pedometer_walk_time
+      24  dmp_load_motion_driver_firmware
+    3064  dmp_memory
+     544  dmp_read_fifo
+       8  dmp_register_android_orient_cb
+       8  dmp_register_tap_cb
+     324  dmp_set_accel_bias
+     110  dmp_set_fifo_rate
+     326  dmp_set_gyro_bias
+      74  dmp_set_interrupt_mode
+     338  dmp_set_orientation
+      38  dmp_set_pedometer_step_count
+      44  dmp_set_pedometer_walk_time
+      50  dmp_set_shake_reject_thresh
+      36  dmp_set_shake_reject_time
+      36  dmp_set_shake_reject_timeout
+      70  dmp_set_tap_axes
+      40  dmp_set_tap_count
+     384  dmp_set_tap_thresh
+      36  dmp_set_tap_time
+      36  dmp_set_tap_time_multi
+       2  sStartAddress
+
+ 
+    16 bytes in section .bss
+ 3 142 bytes in section .rodata
+ 3 614 bytes in section .text
+ 
+ 3 614 bytes of CODE  memory
+ 3 142 bytes of CONST memory
+    16 bytes of DATA  memory
+
+Errors: none
+Warnings: none

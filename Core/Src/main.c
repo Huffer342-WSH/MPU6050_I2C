@@ -518,7 +518,7 @@ int main(void)
             }
         }
 
-#if 1
+#if 0
         if (new_data)
         {
             long data[9];

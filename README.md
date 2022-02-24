@@ -76,25 +76,32 @@ STM32F4、MSP430部分未作修改
 
 ## 移植
 
-`inv_mpu.c`和`inv_mpu_dmp_motion_driver.c`中有宏定义以供移植，原代码注释如下
+`inv_mpu.c`和`inv_mpu_dmp_motion_driver.c`中有宏定义以供移植，位置都在文件开头附近，原代码注释如下
 
 ##### inv_mpu_dmp_motion_driver.c
 
 > */\* The following functions must be defined for this platform:*
 >
->  ** i2c_write(unsigned char slave_addr, unsigned char reg_addr,*
+> ** i2c_write(unsigned char slave_addr, unsigned char reg_addr,*
 >
->  **    unsigned char length, unsigned char const \*data)*
+> **    unsigned char length, unsigned char const \*data)*
 >
->  ** i2c_read(unsigned char slave_addr, unsigned char reg_addr,*
+> ** i2c_read(unsigned char slave_addr, unsigned char reg_addr,*
 >
->  **    unsigned char length, unsigned char \*data)*
+> **    unsigned char length, unsigned char \*data)*
 >
->  ** delay_ms(unsigned long num_ms)*
+> ** delay_ms(unsigned long num_ms)*
 >
->  ** get_ms(unsigned long \*count)*
+> ** get_ms(unsigned long \*count)*
 >
->  **/*
+> **/*
+
+四个函数的功能分别是：
+
+- i2c_write() ： I2C写
+- i2c_read() ： I2C读
+- delay_ms() ： 毫秒级延迟
+- get_ms() :  获得毫秒级时间戳
 
 ##### inv_mpu.c
 
@@ -122,7 +129,16 @@ STM32F4、MSP430部分未作修改
 >
 > **/*
 
-实际上需要提供的只有
+除了上文提及的四个函数，又多了：
+
+- reg_int_cb() 是MSP芯片中使用的函数，用于注册外部中断
+- labs() ： 返回long型的绝对值，c语言标准库stdlib.h中有同名函数，`#include <stdlib.h>`（默认状态）即可
+- fabsf() : 返回单精度浮点数绝对值，同上。
+- min() : 返回两数较小值，默认即可
+
+
+
+综上，实际上需要提供的只有
 
 - i2c_write(unsigned char slave_addr, unsigned char reg_addr,*unsigned char length, unsigned char const \*data)*
 
@@ -144,11 +160,48 @@ STM32F4、MSP430部分未作修改
   #define get_ms get_ms_user
   ```
 
-  具体实现在porting文件夹中
+  具体实现在porting文件夹STM32F1_porting.c中
+  
+  其中Sensors_I2C_WriteRegister()和Sensors_I2C_ReadRegister()是对HAL库的硬件I2C进行封装得到，HAL_Delay()直接使用HAL库的延迟函数，get_ms_user()是对HAL库的HAL_GetTick()封装得到。
+  
+  **STM32F1_porting.h**：
+  
+  修改**#define MPU6050_I2C_Handle hi2c1** ，设置硬件I2C结构体，声明在i2c.h中
+  
+  ```c
+  #ifndef MPU6050_MOTION_DRIVER_PORTING_STM32F1_PORTING_H_
+  #define MPU6050_MOTION_DRIVER_PORTING_STM32F1_PORTING_H_
+  
+  #include "i2c.h"
+  #include "main.h"
+  
+  #define MPU6050_I2C_Handle hi2c1 //硬件I2C结构体
+  
+  #define I2Cx_FLAG_TIMEOUT ((uint32_t)1000) // 超时时间 Timeout duration
+  #define I2Cx_LONG_TIMEOUT ((uint32_t)(300 * I2Cx_FLAG_TIMEOUT))
+  
+  int Sensors_I2C_ReadRegister(unsigned char slave_addr, unsigned char reg_addr, unsigned short len,
+                               unsigned char *data_ptr);
+  int Sensors_I2C_WriteRegister(unsigned char slave_addr, unsigned char reg_addr, unsigned short len,
+                                unsigned char *data_ptr);
+  
+  void get_ms_user(unsigned long *count);
+  
+  #endif /* MPU6050_MOTION_DRIVER_PORTING_STM32F1_PORTING_H_ */
+  
+  ```
+  
+  
 ## 引脚
 包含一个**外部上升沿中断**引脚和I2C的SDA、SCL引脚，共三个引脚
 
 想要高频率的获取数据就用中断，不需要使用时关闭中断，等要数据时打开中断，高频率获取数据再滤波。
+
+我的引脚配置：
+
+硬件I2C1，PB6(I2C1_SCL)<==>MPU的SCL引脚   PB7(I2C1_SDA)<==>MPU的SDA引脚 PA11<==>MPU6050的INT引脚。
+
+MPU的AD0引脚务必接地或者悬空，否则从机地址错误。
 
 ## 编译
 
@@ -165,6 +218,10 @@ STM32F4、MSP430部分未作修改
 `USE_DMP`
 
 `REMOVE_LOGGING`
+
+
+
+![]()
 
 ## 使用
 
